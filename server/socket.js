@@ -59,7 +59,7 @@ const initializeSocket = (io) => {
     // Handle new message
     socket.on('send_message', async (data) => {
       try {
-        const { conversationId, content, messageType = 'text', fileUrl } = data;
+        const { conversationId, content, messageType = 'text' } = data;
         
         // Verify user is part of this conversation
         const conversation = await database.get(`
@@ -75,9 +75,9 @@ const initializeSocket = (io) => {
         // Create message in database
         const messageId = require('uuid').v4();
         await database.run(`
-          INSERT INTO messages (id, conversation_id, sender_id, content, message_type, file_url, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        `, [messageId, conversationId, socket.userId, content, messageType, fileUrl]);
+                  INSERT INTO messages (id, conversation_id, sender_id, content, message_type, created_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `, [messageId, conversationId, socket.userId, content, messageType]);
 
         // Update conversation last message time
         await database.run(`
@@ -89,7 +89,7 @@ const initializeSocket = (io) => {
         // Get the created message with sender info
         const message = await database.get(`
           SELECT 
-            m.id, m.content, m.sender_id, m.message_type, m.file_url, m.created_at,
+            m.id, m.content, m.sender_id, m.message_type, m.created_at,
             u.name as sender_name, u.avatar as sender_avatar
           FROM messages m
           JOIN users u ON m.sender_id = u.id

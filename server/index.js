@@ -8,7 +8,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const database = require('./database/connection');
+const database = require('./database/postgres-connection');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const matchRoutes = require('./routes/matches');
@@ -46,8 +46,7 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Static files
-app.use('/uploads', express.static('uploads'));
+
 
 // Health check
 app.get('/health', (req, res) => {

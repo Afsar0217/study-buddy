@@ -3,46 +3,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+
 const database = require('../database/connection');
 
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadsDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    // Only allow image files
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
 
 // Middleware to validate request
 const validateRequest = (req, res, next) => {
@@ -283,41 +251,7 @@ router.put('/profile', verifyToken, [
   }
 });
 
-// Upload avatar
-router.post('/avatar', verifyToken, upload.single('avatar'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
 
-    const userId = req.user.userId;
-    const avatarPath = `/uploads/${req.file.filename}`;
-
-    // Update user's avatar in database
-    await database.run(
-      'UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [avatarPath, userId]
-    );
-
-    // Get updated user
-    const updatedUser = await database.get(
-      'SELECT id, email, name, university, major, year, bio, avatar, location, created_at, updated_at FROM users WHERE id = ?',
-      [userId]
-    );
-
-    res.json({
-      message: 'Avatar uploaded successfully',
-      avatar: avatarPath,
-      user: updatedUser
-    });
-
-  } catch (error) {
-    console.error('Avatar upload error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error while uploading avatar' 
-    });
-  }
-});
 
 // Change password
 router.put('/change-password', verifyToken, [

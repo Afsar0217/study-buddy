@@ -97,7 +97,7 @@ router.get('/conversations/:conversationId/messages', verifyToken, async (req, r
     // Get messages
     const messages = await database.all(`
       SELECT 
-        m.id, m.content, m.sender_id, m.message_type, m.file_url, m.created_at, m.read_at,
+        m.id, m.content, m.sender_id, m.message_type, m.created_at, m.read_at,
         u.name as sender_name, u.avatar as sender_avatar
       FROM messages m
       JOIN users u ON m.sender_id = u.id
@@ -130,13 +130,12 @@ router.get('/conversations/:conversationId/messages', verifyToken, async (req, r
 // Send a message
 router.post('/conversations/:conversationId/messages', verifyToken, [
   body('content').trim().notEmpty(),
-  body('messageType').optional().isIn(['text', 'file', 'image']),
-  body('fileUrl').optional().isURL(),
+  body('messageType').optional().isIn(['text']),
   validateRequest
 ], async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const { content, messageType = 'text', fileUrl } = req.body;
+    const { content, messageType = 'text' } = req.body;
     const userId = req.user.userId;
 
     // Verify user is part of this conversation
@@ -152,9 +151,9 @@ router.post('/conversations/:conversationId/messages', verifyToken, [
     // Create message
     const messageId = require('uuid').v4();
     await database.run(`
-      INSERT INTO messages (id, conversation_id, sender_id, content, message_type, file_url, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `, [messageId, conversationId, userId, content, messageType, fileUrl]);
+      INSERT INTO messages (id, conversation_id, sender_id, content, message_type, created_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `, [messageId, conversationId, userId, content, messageType]);
 
     // Update conversation last message time
     await database.run(`
@@ -166,7 +165,7 @@ router.post('/conversations/:conversationId/messages', verifyToken, [
     // Get the created message with sender info
     const message = await database.get(`
       SELECT 
-        m.id, m.content, m.sender_id, m.message_type, m.file_url, m.created_at,
+        m.id, m.content, m.sender_id, m.message_type, m.created_at,
         u.name as sender_name, u.avatar as sender_avatar
       FROM messages m
       JOIN users u ON m.sender_id = u.id
@@ -350,7 +349,7 @@ router.get('/search', verifyToken, async (req, res) => {
 
     let sql = `
       SELECT 
-        m.id, m.content, m.sender_id, m.message_type, m.file_url, m.created_at,
+        m.id, m.content, m.sender_id, m.message_type, m.created_at,
         c.id as conversation_id,
         u.name as sender_name, u.avatar as sender_avatar
       FROM messages m
