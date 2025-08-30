@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, PanInfo } from 'motion/react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
@@ -7,8 +7,9 @@ import { Badge } from './ui/badge';
 import { useTheme } from './ThemeProvider';
 import { 
   Heart, X, MessageSquare, Calendar, Settings, Sun, Moon, 
-  MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut
+  MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut, RefreshCw
 } from 'lucide-react';
+import { matchesAPI } from '../services/api';
 
 interface MainDashboardProps {
   onNavigate: (screen: 'dashboard' | 'chat' | 'profile' | 'schedule' | 'settings') => void;
@@ -71,14 +72,87 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
   const { theme, toggleTheme } = useTheme();
   const [currentBuddyIndex, setCurrentBuddyIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
+  const [potentialBuddies, setPotentialBuddies] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [filters, setFilters] = useState({
+    major: '',
+    year: '',
+    subject: '',
+    location: ''
+  });
 
-  const currentBuddy = mockBuddies[currentBuddyIndex];
+  // Load potential study buddies
+  useEffect(() => {
+    loadPotentialBuddies();
+  }, [filters]);
 
-  const handleSwipe = (direction: 'left' | 'right') => {
-    if (currentBuddyIndex < mockBuddies.length - 1) {
-      setCurrentBuddyIndex(prev => prev + 1);
-    } else {
+  const loadPotentialBuddies = async () => {
+    setIsLoading(true);
+    try {
+      const response = await matchesAPI.getPotentialBuddies(filters);
+      setPotentialBuddies(response.potentialBuddies || []);
       setCurrentBuddyIndex(0);
+    } catch (error) {
+      console.error('Error loading potential buddies:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const currentBuddy = potentialBuddies[currentBuddyIndex] || mockBuddies[currentBuddyIndex] || mockBuddies[0] || {
+    id: 'default',
+    name: 'Study Buddy',
+    age: 20,
+    major: 'General Studies',
+    year: 'Undergraduate',
+    university: 'University',
+    avatar: '',
+    bio: 'Looking for study partners to collaborate and learn together!',
+    subjects: ['General Studies'],
+    studyTimes: [{ day: 'Any', time: 'Flexible' }],
+    location: 'Nearby',
+    rating: 4.5,
+    studySessions: 0,
+    badges: ['New']
+  };
+
+  // Debug: Log the current buddy data structure
+  console.log('Current buddy data:', currentBuddy);
+  console.log('Study times:', currentBuddy.studyTimes);
+  console.log('Subjects:', currentBuddy.subjects);
+  console.log('Badges:', currentBuddy.badges);
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (currentBuddy && potentialBuddies.length > 0) {
+      try {
+        if (direction === 'right') {
+          // Like the user
+          const response = await matchesAPI.swipe(currentBuddy.id, 'like');
+          console.log('Swipe response:', response);
+          
+          if (response.isMatch) {
+            // It's a match! Show notification
+            alert(`🎉 It's a match with ${currentBuddy.name}!`);
+          }
+        }
+        
+        // Move to next buddy
+        if (currentBuddyIndex < potentialBuddies.length - 1) {
+          setCurrentBuddyIndex(prev => prev + 1);
+        } else {
+          // No more buddies, reload
+          await loadPotentialBuddies();
+        }
+      } catch (error) {
+        console.error('Error processing swipe:', error);
+      }
+    } else {
+      // Fallback to mock data
+      if (currentBuddyIndex < mockBuddies.length - 1) {
+        setCurrentBuddyIndex(prev => prev + 1);
+      } else {
+        setCurrentBuddyIndex(0);
+      }
     }
   };
 
@@ -100,41 +174,41 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
             <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="font-semibold">Hi {user?.name?.split(' ')[0] || 'User'}!</h1>
-            <p className="text-sm text-muted-foreground">Find your study buddy</p>
+            <h1 className="text-lg font-semibold">Find Study Buddies</h1>
+            <p className="text-sm text-muted-foreground">
+              {potentialBuddies.length > 0 ? `${potentialBuddies.length} potential matches` : 'No matches found'}
+            </p>
           </div>
         </div>
-
         <div className="flex items-center space-x-2">
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowFilters(!showFilters)}
-            className="relative"
+            variant="outline"
+            size="sm"
+            onClick={loadPotentialBuddies}
+            disabled={isLoading}
           >
-            <Filter className="w-5 h-5" />
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={toggleTheme}
           >
-            {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onNavigate('settings')}
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+            variant="outline"
+            size="sm"
             onClick={onSignOut}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -182,23 +256,33 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
                 
                 {/* Badges */}
                 <div className="absolute top-4 left-4 flex flex-wrap gap-1">
-                  {currentBuddy.badges.map((badge) => (
-                    <Badge key={badge} className="bg-green-500 text-white text-xs">
+                  {currentBuddy.badges?.map((badgeItem: any, index: number) => {
+                    const badgeText = typeof badgeItem === 'string' 
+                      ? badgeItem 
+                      : badgeItem?.name || badgeItem?.title || 'New';
+                    return (
+                      <Badge key={index} className="bg-green-500 text-white text-xs">
+                        <Zap className="w-3 h-3 mr-1" />
+                        {badgeText}
+                      </Badge>
+                    );
+                  }) || (
+                    <Badge className="bg-green-500 text-white text-xs">
                       <Zap className="w-3 h-3 mr-1" />
-                      {badge}
+                      New
                     </Badge>
-                  ))}
+                  )}
                 </div>
 
                 {/* Avatar and basic info */}
                 <div className="absolute bottom-4 left-4 flex items-center space-x-3">
                   <Avatar className="w-16 h-16 border-2 border-white">
                     <AvatarImage src={currentBuddy.avatar} />
-                    <AvatarFallback>{currentBuddy.name.charAt(0)}</AvatarFallback>
+                    <AvatarFallback>{currentBuddy.name?.charAt(0) || 'S'}</AvatarFallback>
                   </Avatar>
                   <div className="text-white">
-                    <h2 className="text-xl font-bold">{currentBuddy.name}, {currentBuddy.age}</h2>
-                    <p className="text-sm opacity-90">{currentBuddy.major} • {currentBuddy.year}</p>
+                    <h2 className="text-xl font-bold">{currentBuddy.name || 'Study Buddy'}{currentBuddy.age ? `, ${currentBuddy.age}` : ''}</h2>
+                    <p className="text-sm opacity-90">{currentBuddy.major || 'Student'} • {currentBuddy.year || 'Undergraduate'}</p>
                   </div>
                 </div>
               </div>
@@ -208,18 +292,18 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium">{currentBuddy.rating}</span>
-                    <span className="text-sm text-muted-foreground">({currentBuddy.studySessions} sessions)</span>
+                    <span className="font-medium">{currentBuddy.rating || '4.5'}</span>
+                    <span className="text-sm text-muted-foreground">({currentBuddy.studySessions || 0} sessions)</span>
                   </div>
                   <div className="flex items-center space-x-1 text-sm text-muted-foreground">
                     <MapPin className="w-4 h-4" />
-                    <span>{currentBuddy.location}</span>
+                    <span>{currentBuddy.location || 'Nearby'}</span>
                   </div>
                 </div>
 
                 {/* Bio */}
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  {currentBuddy.bio}
+                  {currentBuddy.bio || 'Looking for study partners to collaborate and learn together!'}
                 </p>
 
                 {/* Subjects */}
@@ -229,11 +313,20 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
                     <span className="text-sm font-medium">Study Subjects</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {currentBuddy.subjects.map((subject) => (
-                      <Badge key={subject} variant="secondary" className="text-xs">
-                        {subject}
+                    {currentBuddy.subjects?.map((subjectItem: any, index: number) => {
+                      const subjectText = typeof subjectItem === 'string' 
+                        ? subjectItem 
+                        : subjectItem?.subject || subjectItem?.name || 'General Studies';
+                      return (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {subjectText}
+                        </Badge>
+                      );
+                    }) || (
+                      <Badge variant="secondary" className="text-xs">
+                        General Studies
                       </Badge>
-                    ))}
+                    )}
                   </div>
                 </div>
 
@@ -244,11 +337,20 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
                     <span className="text-sm font-medium">Available Times</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {currentBuddy.studyTimes.map((time) => (
-                      <Badge key={time} variant="outline" className="text-xs">
-                        {time}
+                    {currentBuddy.studyTimes?.map((timeItem: any, index: number) => {
+                      const timeText = typeof timeItem === 'string' 
+                        ? timeItem 
+                        : timeItem?.time || timeItem?.day || 'Flexible';
+                      return (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          {timeText}
+                        </Badge>
+                      );
+                    }) || (
+                      <Badge variant="outline" className="text-xs">
+                        Flexible
                       </Badge>
-                    ))}
+                    )}
                   </div>
                 </div>
               </CardContent>

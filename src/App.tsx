@@ -8,6 +8,7 @@ import { MainDashboard } from './components/MainDashboard';
 import { ChatInterface } from './components/ChatInterface';
 import { ProfileView } from './components/ProfileView';
 import { ScheduleSystem } from './components/ScheduleSystem';
+import { StudySessionCreation } from './components/StudySessionCreation';
 import { SettingsScreen } from './components/SettingsScreen';
 import { ThemeProvider } from './components/ThemeProvider';
 import { authAPI, User } from './services/api';
@@ -45,6 +46,7 @@ export default function App() {
       setCurrentScreen('profile-setup');
     } else {
       // Existing user login - check if profile is complete
+      console.log('Existing user login, checking profile completion...');
       if (isProfileComplete(userData)) {
         console.log('Profile is complete, redirecting to dashboard');
         setCurrentScreen('dashboard');
@@ -66,8 +68,11 @@ export default function App() {
     
     console.log('Profile completion check:', { major, year, bio, userData });
     
-    const isComplete = major.trim() !== '' && year.trim() !== '' && bio.trim() !== '';
-    console.log('Profile is complete:', isComplete);
+    // More flexible check - require at least 2 out of 3 fields to be filled
+    const filledFields = [major, year, bio].filter(field => field.trim() !== '').length;
+    const isComplete = filledFields >= 2;
+    
+    console.log('Profile is complete:', isComplete, `(${filledFields}/3 fields filled)`);
     
     return isComplete;
   };
@@ -117,12 +122,12 @@ export default function App() {
         return <ProfileSetup onComplete={handleProfileComplete} />;
       case 'dashboard':
         return <MainDashboard onNavigate={navigateTo} onSignOut={handleSignOut} user={user} />;
-      case 'chat':
-        return <ChatInterface onBack={() => navigateTo('dashboard')} />;
+              case 'chat':
+          return <ChatInterface onBack={() => navigateTo('dashboard')} currentUser={user} />;
       case 'profile':
         return <ProfileView onBack={() => navigateTo('dashboard')} />;
-      case 'schedule':
-        return <ScheduleSystem onBack={() => navigateTo('dashboard')} />;
+              case 'schedule':
+          return <StudySessionCreation onBack={() => navigateTo('dashboard')} user={user} />;
       case 'settings':
         return <SettingsScreen onBack={() => navigateTo('dashboard')} onSignOut={handleSignOut} />;
       default:

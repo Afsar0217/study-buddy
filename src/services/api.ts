@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
 // API base configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -185,6 +185,15 @@ export const authAPI = {
 
   updateProfile: async (updates: Partial<User>): Promise<{ user: User }> => {
     const response = await api.put('/auth/profile', updates);
+    return response.data;
+  },
+
+  uploadAvatar: async (formData: FormData): Promise<{ avatar: string; user: User }> => {
+    const response = await api.post('/auth/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data;
   },
 

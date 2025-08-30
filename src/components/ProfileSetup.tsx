@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Progress } from './ui/progress';
-import { Plus, X, Camera, BookOpen, Clock, Target } from 'lucide-react';
+import { Plus, X, Camera, BookOpen, Clock, Target, Upload } from 'lucide-react';
 import { authAPI } from '../services/api';
 
 interface ProfileSetupProps {
@@ -128,7 +128,7 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                     <AvatarFallback className="text-xl">JD</AvatarFallback>
                   </Avatar>
                   <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Camera className="w-4 h-4 text-white" />
+                    <Upload className="w-4 h-4 text-white" />
                   </button>
                 </div>
               </div>
