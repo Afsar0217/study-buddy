@@ -23,8 +23,22 @@ router.post('/sessions', verifyToken, [
   body('description').optional().trim(),
   body('subject').optional().trim(),
   body('sessionType').isIn(['in-person', 'virtual']),
-  body('location').optional().trim(),
-  body('virtualLink').optional().isURL(),
+  body('location').custom((value, { req }) => {
+    if (req.body.sessionType === 'in-person' && (!value || !value.trim())) {
+      throw new Error('Location is required for in-person sessions');
+    }
+    return true;
+  }),
+  body('virtualLink').optional().custom((value) => {
+    if (value && value.trim()) {
+      try {
+        new URL(value);
+      } catch (error) {
+        throw new Error('Virtual link must be a valid URL');
+      }
+    }
+    return true;
+  }),
   body('startTime').isISO8601(),
   body('endTime').isISO8601(),
   body('maxParticipants').optional().isInt({ min: 2, max: 10 }),

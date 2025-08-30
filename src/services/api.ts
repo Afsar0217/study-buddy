@@ -366,8 +366,15 @@ export const chatAPI = {
 // Schedule API
 export const scheduleAPI = {
   createSession: async (sessionData: CreateSessionData): Promise<{ session: StudySession }> => {
-    const response = await api.post('/schedule/sessions', sessionData);
-    return response.data;
+    console.log('API createSession called with:', sessionData);
+    try {
+      const response = await api.post('/schedule/sessions', sessionData);
+      console.log('API createSession response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API createSession error:', error.response?.data || error.message);
+      throw error;
+    }
   },
 
   getSessions: async (filters?: { status?: string; type?: string }): Promise<{ sessions: StudySession[] }> => {

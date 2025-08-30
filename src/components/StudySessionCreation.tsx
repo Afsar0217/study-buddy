@@ -90,6 +90,16 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
       ...prev,
       [field]: value
     }));
+    
+    // Auto-set end time if it's empty and we're setting start time
+    if (field === 'startTime' && value && !formData.endTime) {
+      const startDate = new Date(value as string);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Add 1 hour
+      setFormData(prev => ({
+        ...prev,
+        endTime: endDate.toISOString().slice(0, 16)
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,7 +107,77 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
     setIsLoading(true);
     
     try {
-      const response = await scheduleAPI.createSession(formData);
+      // Validate required fields
+      if (!formData.title.trim()) {
+        alert('Please enter a session title');
+        return;
+      }
+      
+      if (!formData.startTime || !formData.endTime) {
+        alert('Please select both start and end times');
+        return;
+      }
+      
+      if (formData.sessionType === 'in-person' && !formData.location.trim()) {
+        alert('Please enter a location for in-person sessions');
+        return;
+      }
+      
+      // Check if end time is after start time
+      if (formData.startTime && formData.endTime) {
+        const startDate = new Date(formData.startTime);
+        const endDate = new Date(formData.endTime);
+        
+        if (endDate <= startDate) {
+          alert('End time must be after start time');
+          return;
+        }
+        
+        // Check if start time is in the future
+        const now = new Date();
+        if (startDate <= now) {
+          alert('Start time must be in the future');
+          return;
+        }
+      }
+      
+      // Convert datetime-local values to ISO8601 format and clean up empty fields
+      const sessionData: any = {
+        title: formData.title.trim(),
+        sessionType: formData.sessionType,
+        startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
+        endTime: formData.endTime ? new Date(formData.endTime).toISOString() : '',
+        maxParticipants: formData.maxParticipants || 2
+      };
+
+      // Only include non-empty optional fields
+      if (formData.description?.trim()) {
+        sessionData.description = formData.description.trim();
+      }
+      
+      if (formData.subject?.trim()) {
+        sessionData.subject = formData.subject.trim();
+      }
+
+      // Only include location for in-person sessions
+      if (formData.sessionType === 'in-person' && formData.location) {
+        sessionData.location = formData.location;
+      }
+
+      // Only include virtualLink for virtual sessions and when it has a value
+      if (formData.sessionType === 'virtual' && formData.virtualLink) {
+        sessionData.virtualLink = formData.virtualLink;
+      }
+      
+      console.log('Sending session data:', sessionData);
+      console.log('Session data validation:');
+      console.log('- title:', sessionData.title, 'valid:', !!sessionData.title?.trim());
+      console.log('- sessionType:', sessionData.sessionType, 'valid:', ['in-person', 'virtual'].includes(sessionData.sessionType));
+      console.log('- startTime:', sessionData.startTime, 'valid:', sessionData.startTime && !isNaN(new Date(sessionData.startTime).getTime()));
+      console.log('- endTime:', sessionData.endTime, 'valid:', sessionData.endTime && !isNaN(new Date(sessionData.endTime).getTime()));
+      console.log('- maxParticipants:', sessionData.maxParticipants, 'valid:', sessionData.maxParticipants >= 2 && sessionData.maxParticipants <= 10);
+      
+      const response = await scheduleAPI.createSession(sessionData);
       console.log('Session created:', response.session);
       
       // Reset form
@@ -116,8 +196,26 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
       // Switch to my sessions tab
       setActiveTab('my-sessions');
       await loadMySessions();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating session:', error);
+      
+      // Show detailed error information
+      if (error.response) {
+        console.error('Server response:', error.response.data);
+        console.error('Status:', error.response.status);
+        
+        if (error.response.data && error.response.data.error) {
+          alert(`Error: ${error.response.data.error}`);
+        } else if (error.response.data && error.response.data.details) {
+          const details = error.response.data.details;
+          const errorMessages = details.map((detail: any) => `${detail.path}: ${detail.msg}`).join('\n');
+          alert(`Validation errors:\n${errorMessages}`);
+        } else {
+          alert('Failed to create study session. Please check your input and try again.');
+        }
+      } else {
+        alert('Failed to create study session. Please check your input and try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -321,6 +419,7 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
                         type="datetime-local"
                         value={formData.startTime}
                         onChange={(e) => handleInputChange('startTime', e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
                         required
                       />
                     </div>
@@ -330,6 +429,7 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
                         type="datetime-local"
                         value={formData.endTime}
                         onChange={(e) => handleInputChange('endTime', e.target.value)}
+                        min={formData.startTime || new Date().toISOString().slice(0, 16)}
                         required
                       />
                     </div>
