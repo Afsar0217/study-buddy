@@ -8,6 +8,7 @@ import { MainDashboard } from './components/MainDashboard';
 import { ChatInterface } from './components/ChatInterface';
 import { ProfileView } from './components/ProfileView';
 import { MyProfile } from './components/MyProfile';
+import { UserProfile } from './components/UserProfile';
 import { ScheduleSystem } from './components/ScheduleSystem';
 import { StudySessionCreation } from './components/StudySessionCreation';
 import { SettingsScreen } from './components/SettingsScreen';
@@ -23,12 +24,14 @@ type Screen =
   | 'chat'
   | 'profile'
   | 'my-profile'
+  | 'user-profile'
   | 'schedule'
   | 'settings';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [user, setUser] = useState<User | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Simulate splash screen loading
@@ -97,6 +100,11 @@ export default function App() {
     setCurrentScreen(screen);
   };
 
+  const viewUserProfile = (userId: string) => {
+    setSelectedUserId(userId);
+    setCurrentScreen('user-profile');
+  };
+
   const handleSignOut = async () => {
     try {
       // Call backend logout API
@@ -123,15 +131,21 @@ export default function App() {
       case 'profile-setup':
         return <ProfileSetup onComplete={handleProfileComplete} />;
       case 'dashboard':
-        return <MainDashboard onNavigate={navigateTo} onSignOut={handleSignOut} user={user} />;
+        return <MainDashboard onNavigate={navigateTo} onSignOut={handleSignOut} user={user} onViewUserProfile={viewUserProfile} />;
               case 'chat':
           return <ChatInterface onBack={() => navigateTo('dashboard')} currentUser={user} />;
       case 'profile':
         return <ProfileView onBack={() => navigateTo('dashboard')} />;
       case 'my-profile':
         return <MyProfile onBack={() => navigateTo('dashboard')} user={user} />;
-              case 'schedule':
-          return <StudySessionCreation onBack={() => navigateTo('dashboard')} user={user} />;
+      case 'user-profile':
+        return selectedUserId ? (
+          <UserProfile onBack={() => navigateTo('dashboard')} userId={selectedUserId} />
+        ) : (
+          <div>User not found</div>
+        );
+      case 'schedule':
+        return <StudySessionCreation onBack={() => navigateTo('dashboard')} user={user} />;
       case 'settings':
         return <SettingsScreen onBack={() => navigateTo('dashboard')} onSignOut={handleSignOut} />;
       default:

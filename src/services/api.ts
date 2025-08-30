@@ -208,6 +208,24 @@ export const authAPI = {
   },
 };
 
+// Utility function for retrying failed requests
+const retryRequest = async <T>(
+  requestFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> => {
+  try {
+    return await requestFn();
+  } catch (error: any) {
+    if (maxRetries > 0 && (error.code === 'ERR_NETWORK' || error.message === 'Network Error')) {
+      console.log(`Retrying request... (${maxRetries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryRequest(requestFn, maxRetries - 1, delay * 1.5);
+    }
+    throw error;
+  }
+};
+
 // Users API
 export const usersAPI = {
   getProfile: async (): Promise<{ user: User & { subjects: any[]; studyTimes: any[]; preferences: any } }> => {
@@ -240,6 +258,7 @@ export const usersAPI = {
     year?: string;
     subject?: string;
     location?: string;
+    search?: string;
     limit?: number;
     offset?: number;
   }): Promise<{ users: StudyBuddy[]; pagination: any }> => {
@@ -248,12 +267,40 @@ export const usersAPI = {
       if (value !== undefined) params.append(key, value.toString());
     });
     
-    const response = await api.get(`/users/search?${params.toString()}`);
-    return response.data;
+    return retryRequest(async () => {
+      const response = await api.get(`/users/search?${params.toString()}`);
+      return response.data;
+    });
   },
 
   getStats: async (): Promise<{ stats: any }> => {
     const response = await api.get('/users/me/stats');
+    return response.data;
+  },
+
+  // Like functionality
+  likeUser: async (userId: string): Promise<{ message: string }> => {
+    const response = await api.post(`/users/${userId}/like`);
+    return response.data;
+  },
+
+  unlikeUser: async (userId: string): Promise<{ message: string }> => {
+    const response = await api.delete(`/users/${userId}/like`);
+    return response.data;
+  },
+
+  getLikeCount: async (userId: string): Promise<{ likeCount: number }> => {
+    const response = await api.get(`/users/${userId}/likes`);
+    return response.data;
+  },
+
+  checkIfLiked: async (userId: string): Promise<{ hasLiked: boolean }> => {
+    const response = await api.get(`/users/${userId}/liked`);
+    return response.data;
+  },
+
+  getProfileById: async (userId: string): Promise<{ user: any }> => {
+    const response = await api.get(`/users/${userId}`);
     return response.data;
   },
 };

@@ -15,7 +15,7 @@ db.run('PRAGMA foreign_keys = ON');
 const createTables = () => {
   return new Promise((resolve, reject) => {
     let tablesCreated = 0;
-    const totalTables = 10; // Total number of tables to create
+    const totalTables = 11; // Total number of tables to create
     
     const checkCompletion = () => {
       tablesCreated++;
@@ -251,6 +251,25 @@ const createTables = () => {
         checkCompletion();
       }
     });
+
+    // User likes table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_likes (
+        id TEXT PRIMARY KEY,
+        liker_id TEXT NOT NULL,
+        liked_user_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (liker_id) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (liked_user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE(liker_id, liked_user_id)
+      )
+    `, (err) => {
+      if (err) reject(err);
+      else {
+        console.log('✅ User likes table created');
+        checkCompletion();
+      }
+    });
   });
 };
 
@@ -368,6 +387,23 @@ const insertSampleData = async () => {
         INSERT OR REPLACE INTO user_study_times (user_id, day_of_week, start_time, end_time)
         VALUES (?, ?, ?, ?)
       `, [userId, day, start, end]);
+    }
+
+    // Insert sample likes
+    const likes = [
+      ['1', '2'], // Emma likes Marcus
+      ['1', '3'], // Emma likes Sofia
+      ['2', '1'], // Marcus likes Emma
+      ['3', '1'], // Sofia likes Emma
+      ['2', '3']  // Marcus likes Sofia
+    ];
+
+    for (const [likerId, likedUserId] of likes) {
+      const likeId = require('uuid').v4();
+      db.run(`
+        INSERT OR REPLACE INTO user_likes (id, liker_id, liked_user_id)
+        VALUES (?, ?, ?)
+      `, [likeId, likerId, likedUserId]);
     }
 
     console.log('✅ Sample data inserted');

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "db:init": "node database/init.js"
+    "db:init": "node database/init.js",
+    "db:repair": "node repair-db.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

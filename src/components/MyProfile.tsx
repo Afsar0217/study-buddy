@@ -54,6 +54,7 @@ interface UserStats {
   averageRating: string;
   totalMatches: number;
   totalConversations: number;
+  totalLikes: number;
 }
 
 export function MyProfile({ onBack, user }: MyProfileProps) {
@@ -99,6 +100,8 @@ export function MyProfile({ onBack, user }: MyProfileProps) {
       console.log('Processed user data:', userData);
       setProfile(userData);
       setEditData(userData);
+      
+
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -123,6 +126,8 @@ export function MyProfile({ onBack, user }: MyProfileProps) {
       console.error('Error loading sessions:', error);
     }
   };
+
+
 
   const handleSave = async () => {
     try {
@@ -260,27 +265,33 @@ export function MyProfile({ onBack, user }: MyProfileProps) {
                     {profile.name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editData.name || ''}
-                        onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="Your name"
-                      />
-                      <Input
-                        value={editData.university || ''}
-                        onChange={(e) => setEditData(prev => ({ ...prev, university: e.target.value }))}
-                        placeholder="University"
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <h2 className="text-2xl font-bold">{profile.name}</h2>
-                      <p className="text-muted-foreground">{profile.university}</p>
-                    </div>
-                  )}
-                </div>
+                                 <div className="flex-1">
+                   {isEditing ? (
+                     <div className="space-y-2">
+                       <Input
+                         value={editData.name || ''}
+                         onChange={(e) => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                         placeholder="Your name"
+                       />
+                       <Input
+                         value={editData.university || ''}
+                         onChange={(e) => setEditData(prev => ({ ...prev, university: e.target.value }))}
+                         placeholder="University"
+                       />
+                     </div>
+                   ) : (
+                     <div>
+                       <h2 className="text-2xl font-bold">{profile.name}</h2>
+                       <p className="text-muted-foreground">{profile.university}</p>
+                       <div className="flex items-center mt-2 space-x-4">
+                         <div className="flex items-center space-x-2 text-muted-foreground">
+                           <Heart className="w-4 h-4" />
+                           <span className="text-sm">{stats?.totalLikes || 0} {(stats?.totalLikes || 0) === 1 ? 'like' : 'likes'}</span>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+                 </div>
               </div>
             </CardContent>
           </Card>

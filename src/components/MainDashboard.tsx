@@ -8,14 +8,15 @@ import { useTheme } from './ThemeProvider';
 import { 
   Heart, X, MessageSquare, Calendar, Settings, Sun, Moon, 
   MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut, RefreshCw,
-  UserPlus, UserMinus, MessageCircle, User
+  UserPlus, UserMinus, MessageCircle, User, Search
 } from 'lucide-react';
-import { matchesAPI } from '../services/api';
+import { matchesAPI, usersAPI } from '../services/api';
 
 interface MainDashboardProps {
   onNavigate: (screen: 'dashboard' | 'chat' | 'profile' | 'my-profile' | 'schedule' | 'settings') => void;
   onSignOut: () => void;
   user: any;
+  onViewUserProfile: (userId: string) => void;
 }
 
 const mockBuddies = [
@@ -69,7 +70,7 @@ const mockBuddies = [
   }
 ];
 
-export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProps) {
+export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }: MainDashboardProps) {
   const { theme, toggleTheme } = useTheme();
   const [currentBuddyIndex, setCurrentBuddyIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -85,12 +86,39 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
   const [matchedUser, setMatchedUser] = useState<any>(null);
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [pendingMatchesCount, setPendingMatchesCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Load potential study buddies
   useEffect(() => {
     loadPotentialBuddies();
     loadPendingMatches();
   }, [filters]);
+
+  // Load all users when search interface is opened
+  useEffect(() => {
+    if (showSearch) {
+      handleSearch();
+    }
+  }, [showSearch]);
+
+  // Monitor network connectivity
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Add keyboard shortcuts
   useEffect(() => {
@@ -126,8 +154,22 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
       const response = await matchesAPI.getPotentialBuddies(filters);
       setPotentialBuddies(response.potentialBuddies || []);
       setCurrentBuddyIndex(0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading potential buddies:', error);
+      
+      // Handle network errors gracefully
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        console.warn('Network error while loading potential buddies. Using mock data as fallback.');
+        // Fallback to mock data when network fails
+        setPotentialBuddies(mockBuddies);
+        setCurrentBuddyIndex(0);
+      } else {
+        // For other errors, keep existing data if available
+        if (potentialBuddies.length === 0) {
+          setPotentialBuddies(mockBuddies);
+          setCurrentBuddyIndex(0);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -138,9 +180,56 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
       const response = await matchesAPI.getPendingMatches();
       setPendingMatches(response.pendingMatches || []);
       setPendingMatchesCount(response.pendingMatches?.length || 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading pending matches:', error);
+      
+      // Handle network errors gracefully
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        console.warn('Network error while loading pending matches. Setting count to 0.');
+        setPendingMatches([]);
+        setPendingMatchesCount(0);
+      }
+      // For other errors, keep existing data
     }
+  };
+
+  const handleSearch = async () => {
+    try {
+      setIsSearching(true);
+      setSearchError(null); // Clear any previous errors
+      const response = await usersAPI.searchUsers({
+        limit: 20,
+        offset: 0,
+        // Add search query to filters if provided
+        ...(searchQuery.trim() && { search: searchQuery.trim() })
+      });
+      setSearchResults(response.users || []);
+    } catch (error: any) {
+      console.error('Error searching users:', error);
+      
+      // Handle different types of errors
+      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        // Network connectivity issue
+        setSearchError('Network error: Please check your internet connection and try again.');
+        console.warn('Network error detected. Please check your internet connection.');
+      } else if (error.response?.status === 500) {
+        // Server error
+        setSearchError('Server error: Please try again later.');
+        console.warn('Server error. Please try again later.');
+      } else {
+        // Other errors
+        setSearchError('An error occurred while searching. Please try again.');
+        console.warn('An error occurred while searching. Please try again.');
+      }
+      
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    onViewUserProfile(userId);
   };
 
   const currentBuddy = potentialBuddies[currentBuddyIndex] || mockBuddies[currentBuddyIndex] || mockBuddies[0] || {
@@ -226,9 +315,26 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
             <p className="text-sm text-muted-foreground">
               {potentialBuddies.length > 0 ? `${potentialBuddies.length} potential matches` : 'No matches found'}
             </p>
+            {/* Network Status */}
+            {!isOnline && (
+              <div className="flex items-center space-x-1 mt-1">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-xs text-yellow-600 dark:text-yellow-400">Offline</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Search Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSearch(!showSearch)}
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Search Users
+          </Button>
+
           {/* Pending Matches Indicator */}
           {pendingMatchesCount > 0 && (
             <Button
@@ -276,6 +382,146 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
           </Button>
         </div>
       </div>
+
+      {/* Search Interface */}
+      {showSearch && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="p-4 border-b bg-muted/30"
+        >
+          {/* Network Status Indicator */}
+          {!isOnline && (
+            <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <p className="text-yellow-700 dark:text-yellow-300 text-sm font-medium">
+                  You're currently offline. Some features may not work properly.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Search for users by name, major, or subject..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button onClick={handleSearch} disabled={isSearching || !isOnline}>
+                {isSearching ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Search className="w-4 h-4" />
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchQuery('');
+                  handleSearch();
+                }}
+                disabled={isSearching || !isOnline}
+              >
+                Show All
+              </Button>
+            </div>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-muted-foreground">
+                  Search Results ({searchResults.length})
+                </h3>
+                <div className="grid gap-3">
+                  {searchResults.map((user) => (
+                    <Card key={user.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={user.avatar} />
+                            <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="font-semibold">{user.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {user.major} • {user.university}
+                            </p>
+                            {user.subjects && user.subjects.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {user.subjects.slice(0, 3).map((subject: string, index: number) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {subject}
+                                </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewProfile(user.id)}
+                          >
+                            <User className="w-4 h-4 mr-1" />
+                            View Profile
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!searchQuery && searchResults.length === 0 && !isSearching && (
+              <p className="text-center text-muted-foreground py-4">
+                {!isOnline ? (
+                  'You\'re currently offline. Please check your internet connection to search for users.'
+                ) : (
+                  'Click "Show All" to see all users, or search for specific users.'
+                )}
+              </p>
+            )}
+            
+            {searchQuery && searchResults.length === 0 && !isSearching && (
+              <p className="text-center text-muted-foreground py-4">
+                No users found matching your search.
+              </p>
+            )}
+
+            {/* Error Message Display */}
+            {searchError && (
+              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <p className="text-red-700 dark:text-red-300 text-sm font-medium">
+                    {searchError}
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchError(null);
+                      handleSearch();
+                    }}
+                    className="text-red-700 dark:text-red-300 border-red-300 dark:border-red-700 hover:bg-red-100 dark:hover:bg-red-900/30"
+                  >
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    Try Again
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Filters (if shown) */}
       {showFilters && (
