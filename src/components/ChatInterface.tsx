@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Card, CardContent } from './ui/card';
-import { ArrowLeft, Send, Paperclip, Smile, MessageSquare, Clock } from 'lucide-react';
+import { ArrowLeft, Send, Paperclip, Smile, MessageSquare, Clock, Users, BookOpen, Lightbulb } from 'lucide-react';
 import { chatAPI, matchesAPI } from '../services/api';
 import { io, Socket } from 'socket.io-client';
 
@@ -19,7 +19,146 @@ interface ChatInterfaceProps {
   currentUser?: any; // Add current user prop
 }
 
-export function ChatInterface({ onBack, conversationId, otherUser, currentUser }: ChatInterfaceProps) {
+// Static chat data that all users can see
+const STATIC_CHATS = [
+  {
+    id: 'static-study-tips',
+    name: 'Study Tips & Tricks',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    major: 'General',
+    year: 'All Levels',
+    university: 'Study Buddy Community',
+    description: 'Share and discover effective study strategies',
+    isStatic: true,
+    messages: [
+      {
+        id: '1',
+        content: 'Welcome to Study Tips & Tricks! 🎓 Share your best study strategies here.',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '2',
+        content: 'Pro tip: Use the Pomodoro Technique - 25 minutes of focused study followed by a 5-minute break! ⏰',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '3',
+        content: 'Active recall is more effective than passive reading. Try explaining concepts to yourself or others! 🧠',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        read_at: null,
+        isMe: false
+      }
+    ]
+  },
+  {
+    id: 'static-homework-help',
+    name: 'Homework Help Desk',
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    major: 'General',
+    year: 'All Levels',
+    university: 'Study Buddy Community',
+    description: 'Get help with homework and assignments',
+    isStatic: true,
+    messages: [
+      {
+        id: '1',
+        content: 'Welcome to Homework Help Desk! 📚 Need help with an assignment? Post your question here.',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '2',
+        content: 'Remember: Show your work and explain your thought process when asking for help! ✍️',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '3',
+        content: 'Don\'t forget to check the resources section for helpful study materials! 📖',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        read_at: null,
+        isMe: false
+      }
+    ]
+  },
+  {
+    id: 'static-exam-prep',
+    name: 'Exam Preparation Hub',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face',
+    major: 'General',
+    year: 'All Levels',
+    university: 'Study Buddy Community',
+    description: 'Prepare for exams together with study groups',
+    isStatic: true,
+    messages: [
+      {
+        id: '1',
+        content: 'Welcome to Exam Preparation Hub! 📝 Let\'s ace those exams together!',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '2',
+        content: 'Create study groups, share resources, and quiz each other! 🎯',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        read_at: null,
+        isMe: false
+      },
+      {
+        id: '3',
+        content: 'Pro tip: Start studying early and review regularly instead of cramming the night before! ⚡',
+        sender_id: 'system',
+        sender_name: 'Study Buddy Bot',
+        sender_avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        read_at: null,
+        isMe: false
+      }
+    ]
+  }
+];
+
+export function ChatInterface({ onBack, conversationId: initialConversationId, otherUser: initialOtherUser, currentUser }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +168,9 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [loadingPendingMatches, setLoadingPendingMatches] = useState(false);
+  const [currentStaticChat, setCurrentStaticChat] = useState<any>(null);
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
+  const [otherUser, setOtherUser] = useState<any>(initialOtherUser);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize Socket.IO connection
@@ -184,21 +326,74 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
   const goBackToConversationList = () => {
     setConversationId(undefined);
     setOtherUser(undefined);
+    setCurrentStaticChat(undefined);
     setMessages([]);
     // Reload conversations and pending matches
     loadConversations();
     loadPendingMatches();
   };
 
-  const sendMessage = () => {
-    if (newMessage.trim() && socket && isConnected && conversationId) {
-      socket.emit('send_message', {
-        conversationId: conversationId,
-        content: newMessage
-      });
+  const openStaticChat = (staticChat: any) => {
+    console.log('🎯 Opening static chat:', staticChat.name);
+    setCurrentStaticChat(staticChat);
+    setMessages(staticChat.messages);
+    setConversationId(undefined);
+    setOtherUser(undefined);
+    // Clear the conversation list view
+    setConversations([]);
+    setPendingMatches([]);
+  };
+
+  const sendMessageToStaticChat = () => {
+    if (newMessage.trim() && currentStaticChat) {
+      const newMsg = {
+        id: Date.now().toString(),
+        content: newMessage,
+        sender_id: currentUser?.id || 'anonymous',
+        sender_name: currentUser?.name || 'Anonymous User',
+        sender_avatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1494790108755-2616b612b1e0?w=150&h=150&fit=crop&crop=face',
+        message_type: 'text',
+        created_at: new Date().toISOString(),
+        read_at: null,
+        isMe: true
+      };
+      
+      setMessages(prev => [...prev, newMsg]);
       setNewMessage('');
-    } else if (!isConnected) {
-      console.warn('Socket not connected, cannot send message.');
+      
+      // Simulate bot response after a short delay
+      setTimeout(() => {
+        const botResponse = {
+          id: (Date.now() + 1).toString(),
+          content: `Thanks for your message! This is a community chat where everyone can participate. Keep the conversation going! 💬`,
+          sender_id: 'system',
+          sender_name: 'Study Buddy Bot',
+          sender_avatar: currentStaticChat.avatar,
+          message_type: 'text',
+          created_at: new Date().toISOString(),
+          read_at: null,
+          isMe: false
+        };
+        setMessages(prev => [...prev, botResponse]);
+      }, 1000);
+    }
+  };
+
+  const sendMessage = () => {
+    if (newMessage.trim()) {
+      if (currentStaticChat) {
+        // Handle static chat message
+        sendMessageToStaticChat();
+      } else if (socket && isConnected && conversationId) {
+        // Handle regular conversation message
+        socket.emit('send_message', {
+          conversationId: conversationId,
+          content: newMessage
+        });
+        setNewMessage('');
+      } else if (!isConnected) {
+        console.warn('Socket not connected, cannot send message.');
+      }
     }
   };
 
@@ -210,7 +405,7 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
   };
 
   // If no conversation is selected, show conversation list
-  if (!conversationId) {
+  if (!conversationId && !currentStaticChat) {
     return (
       <div className="h-full flex flex-col">
         {/* Header */}
@@ -255,7 +450,63 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Static Chats Section */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2 flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  Community Chats ({STATIC_CHATS.length})
+                </h3>
+                <div className="space-y-2">
+                  {STATIC_CHATS.map((staticChat) => (
+                    <motion.div
+                      key={staticChat.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="cursor-pointer"
+                      onClick={() => openStaticChat(staticChat)}
+                    >
+                      <Card className="hover:shadow-md transition-shadow border-2 border-blue-100 bg-blue-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-12 h-12 border-2 border-blue-200">
+                              <AvatarImage src={staticChat.avatar} />
+                              <AvatarFallback>
+                                {staticChat.name?.charAt(0) || 'C'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium truncate text-blue-800">{staticChat.name}</h3>
+                                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                  Community
+                                </span>
+                              </div>
+                              <p className="text-sm text-blue-600 truncate mt-1">
+                                {staticChat.description}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <span className="text-xs text-blue-500">
+                                  {staticChat.major} • {staticChat.year}
+                                </span>
+                                <span className="text-xs text-blue-400">
+                                  {staticChat.messages.length} messages
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center space-y-1">
+                              <Lightbulb className="w-5 h-5 text-blue-500" />
+                              <span className="text-xs text-blue-500">Join</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
               {/* Pending Matches Section */}
               {pendingMatches.length > 0 && (
                 <div>
@@ -375,23 +626,35 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
     <div className="h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
-        <Button variant="ghost" size="sm" onClick={onBack}>
+        <Button variant="ghost" size="sm" onClick={goBackToConversationList}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
         
         <div className="flex items-center space-x-3">
           <Avatar className="w-8 h-8">
-            <AvatarImage src={otherUser?.avatar} />
-            <AvatarFallback>{otherUser?.name?.charAt(0) || 'U'}</AvatarFallback>
+            <AvatarImage src={currentStaticChat ? currentStaticChat.avatar : otherUser?.avatar} />
+            <AvatarFallback>
+              {currentStaticChat ? currentStaticChat.name?.charAt(0) : otherUser?.name?.charAt(0) || 'U'}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-medium">{otherUser?.name || 'Study Buddy'}</h3>
+            <h3 className="font-medium">
+              {currentStaticChat ? currentStaticChat.name : otherUser?.name || 'Study Buddy'}
+            </h3>
             <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-xs text-muted-foreground">
-                {isConnected ? 'Online' : 'Offline'}
-              </span>
+              {currentStaticChat ? (
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  Community Chat
+                </span>
+              ) : (
+                <>
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-xs text-muted-foreground">
+                    {isConnected ? 'Online' : 'Offline'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -420,16 +683,31 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
               key={message.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.isMe || message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                message.sender_id === currentUser?.id
+                message.isMe || message.sender_id === currentUser?.id
                   ? 'bg-blue-500 text-white' 
-                  : 'bg-muted text-foreground'
+                  : message.sender_id === 'system' 
+                    ? 'bg-green-100 text-green-800 border border-green-200'
+                    : 'bg-muted text-foreground'
               }`}>
+                {message.sender_id === 'system' && (
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Avatar className="w-4 h-4">
+                      <AvatarImage src={message.sender_avatar} />
+                      <AvatarFallback>{message.sender_name?.charAt(0) || 'B'}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium">{message.sender_name}</span>
+                  </div>
+                )}
                 <p className="text-sm">{message.content}</p>
                 <p className={`text-xs mt-1 ${
-                  message.sender_id === currentUser?.id ? 'text-blue-100' : 'text-muted-foreground'
+                  message.isMe || message.sender_id === currentUser?.id 
+                    ? 'text-blue-100' 
+                    : message.sender_id === 'system'
+                      ? 'text-green-600'
+                      : 'text-muted-foreground'
                 }`}>
                   {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
@@ -447,19 +725,23 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type a message..."
-            disabled={!isConnected}
+            placeholder={currentStaticChat ? "Share your thoughts with the community..." : "Type a message..."}
+            disabled={currentStaticChat ? false : !isConnected}
             className="flex-1"
           />
           <Button 
             onClick={sendMessage} 
-            disabled={!newMessage.trim() || !isConnected}
+            disabled={!newMessage.trim() || (currentStaticChat ? false : !isConnected)}
             size="sm"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
-        {!isConnected && (
+        {currentStaticChat ? (
+          <p className="text-xs text-blue-600 mt-2 text-center">
+            💬 This is a community chat. Your messages will be visible to everyone.
+          </p>
+        ) : !isConnected && (
           <p className="text-xs text-red-500 mt-2 text-center">
             Connecting to chat server...
           </p>

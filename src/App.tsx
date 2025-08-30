@@ -135,12 +135,12 @@ export default function App() {
               case 'chat':
           return <ChatInterface onBack={() => navigateTo('dashboard')} currentUser={user} />;
       case 'profile':
-        return <ProfileView onBack={() => navigateTo('dashboard')} />;
+        return <ProfileView onBack={() => navigateTo('dashboard')} onNavigate={navigateTo} />;
       case 'my-profile':
         return <MyProfile onBack={() => navigateTo('dashboard')} user={user} />;
       case 'user-profile':
         return selectedUserId ? (
-          <UserProfile onBack={() => navigateTo('dashboard')} userId={selectedUserId} />
+          <UserProfile onBack={() => navigateTo('dashboard')} userId={selectedUserId} onNavigate={navigateTo} />
         ) : (
           <div>User not found</div>
         );
