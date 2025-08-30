@@ -4,8 +4,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Card, CardContent } from './ui/card';
-import { ArrowLeft, Send, Paperclip, Smile } from 'lucide-react';
-import { chatAPI } from '../services/api';
+import { ArrowLeft, Send, Paperclip, Smile, MessageSquare, Clock } from 'lucide-react';
+import { chatAPI, matchesAPI } from '../services/api';
 import { io, Socket } from 'socket.io-client';
 
 interface ChatInterfaceProps {
@@ -25,6 +25,10 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [pendingMatches, setPendingMatches] = useState<any[]>([]);
+  const [loadingPendingMatches, setLoadingPendingMatches] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize Socket.IO connection
@@ -69,6 +73,14 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
     }
   }, [conversationId]);
 
+  // Load conversations when component mounts
+  useEffect(() => {
+    if (!conversationId) {
+      loadConversations();
+      loadPendingMatches();
+    }
+  }, [conversationId]);
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,6 +98,96 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loadConversations = async () => {
+    setLoadingConversations(true);
+    try {
+      const response = await chatAPI.getConversations();
+      console.log('Loaded conversations:', response);
+      setConversations(response.conversations || []);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const loadPendingMatches = async () => {
+    setLoadingPendingMatches(true);
+    try {
+      const response = await matchesAPI.getPendingMatches();
+      console.log('Loaded pending matches:', response);
+      setPendingMatches(response.pendingMatches || []);
+    } catch (error) {
+      console.error('Error loading pending matches:', error);
+    } finally {
+      setLoadingPendingMatches(false);
+    }
+  };
+
+  const handleAcceptMatch = async (matchId: string) => {
+    try {
+      const response = await matchesAPI.respondToMatch(matchId, 'accept');
+      console.log('Match accepted:', response);
+      
+      // Refresh both lists
+      await Promise.all([loadConversations(), loadPendingMatches()]);
+      
+      // Show success message
+      alert('Match accepted! You can now start chatting.');
+    } catch (error) {
+      console.error('Error accepting match:', error);
+      alert('Failed to accept match. Please try again.');
+    }
+  };
+
+  const handleRejectMatch = async (matchId: string) => {
+    try {
+      const response = await matchesAPI.respondToMatch(matchId, 'reject');
+      console.log('Match rejected:', response);
+      
+      // Refresh pending matches
+      await loadPendingMatches();
+    } catch (error) {
+      console.error('Error rejecting match:', error);
+      alert('Failed to reject match. Please try again.');
+    }
+  };
+
+  const openConversation = (conversation: any) => {
+    console.log('🎯 Clicked on conversation:', conversation);
+    console.log('📝 Conversation ID:', conversation.id);
+    console.log('👤 Other user ID:', conversation.other_user_id);
+    
+    // Set the conversation ID and other user info to open the chat
+    // This will trigger the useEffect that loads messages
+    setConversationId(conversation.id);
+    setOtherUser({
+      id: conversation.other_user_id,
+      name: conversation.name,
+      avatar: conversation.avatar
+    });
+    
+    console.log('✅ Set conversationId to:', conversation.id);
+    console.log('✅ Set otherUser to:', {
+      id: conversation.other_user_id,
+      name: conversation.name,
+      avatar: conversation.avatar
+    });
+    
+    // Clear the conversation list view
+    setConversations([]);
+    setPendingMatches([]);
+  };
+
+  const goBackToConversationList = () => {
+    setConversationId(undefined);
+    setOtherUser(undefined);
+    setMessages([]);
+    // Reload conversations and pending matches
+    loadConversations();
+    loadPendingMatches();
   };
 
   const sendMessage = () => {
@@ -118,14 +220,152 @@ export function ChatInterface({ onBack, conversationId, otherUser, currentUser }
             Back
           </Button>
           <h2 className="text-lg font-semibold">Chats</h2>
-          <div></div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              loadConversations();
+              loadPendingMatches();
+            }}
+            disabled={loadingConversations || loadingPendingMatches}
+          >
+            <Clock className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="text-center text-muted-foreground py-8">
-            Select a conversation to start chatting
-          </div>
+          {loadingConversations || loadingPendingMatches ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading...
+            </div>
+          ) : conversations.length === 0 && pendingMatches.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium mb-2">No conversations yet</p>
+              <p className="text-sm text-gray-500">
+                Start matching with study buddies to begin chatting!
+              </p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={onBack}
+              >
+                Go to Discover
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Pending Matches Section */}
+              {pendingMatches.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">
+                    Pending Matches ({pendingMatches.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {pendingMatches.map((match) => (
+                      <motion.div
+                        key={match.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-orange-50 border border-orange-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-center space-x-3 mb-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={match.avatar} />
+                            <AvatarFallback>
+                              {match.name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="font-medium">{match.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {match.major} • {match.year}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleAcceptMatch(match.id)}
+                            className="flex-1 bg-green-500 hover:bg-green-600"
+                          >
+                            Accept Match
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRejectMatch(match.id)}
+                            className="flex-1"
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Existing Conversations Section */}
+              {conversations.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2">
+                    Your Conversations ({conversations.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {conversations.map((conversation) => (
+                      <motion.div
+                        key={conversation.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ scale: 1.02 }}
+                        className="cursor-pointer"
+                        onClick={() => openConversation(conversation)}
+                      >
+                        <Card className="hover:shadow-md transition-shadow">
+                          <CardContent className="p-4">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage src={conversation.avatar} />
+                                <AvatarFallback>
+                                  {conversation.name?.charAt(0) || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <h3 className="font-medium truncate">{conversation.name}</h3>
+                                  <span className="text-xs text-muted-foreground">
+                                    {conversation.last_message_at ? 
+                                      new Date(conversation.last_message_at).toLocaleDateString() : 
+                                      'New'
+                                    }
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {conversation.lastMessage?.content || 'Start a conversation!'}
+                                </p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-xs text-muted-foreground">
+                                    {conversation.major} • {conversation.year}
+                                  </span>
+                                  {conversation.unreadCount > 0 && (
+                                    <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                                      {conversation.unreadCount} new
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );

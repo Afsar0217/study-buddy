@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, PanInfo } from 'motion/react';
+import { motion } from 'motion/react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -7,7 +7,8 @@ import { Badge } from './ui/badge';
 import { useTheme } from './ThemeProvider';
 import { 
   Heart, X, MessageSquare, Calendar, Settings, Sun, Moon, 
-  MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut, RefreshCw
+  MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut, RefreshCw,
+  UserPlus, UserMinus, MessageCircle
 } from 'lucide-react';
 import { matchesAPI } from '../services/api';
 
@@ -80,11 +81,44 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
     subject: '',
     location: ''
   });
+  const [showMatchNotification, setShowMatchNotification] = useState(false);
+  const [matchedUser, setMatchedUser] = useState<any>(null);
+  const [pendingMatches, setPendingMatches] = useState<any[]>([]);
+  const [pendingMatchesCount, setPendingMatchesCount] = useState(0);
 
   // Load potential study buddies
   useEffect(() => {
     loadPotentialBuddies();
+    loadPendingMatches();
   }, [filters]);
+
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return; // Don't trigger shortcuts when typing in input fields
+      }
+      
+      switch (event.key.toLowerCase()) {
+        case 'a':
+        case 'arrowleft':
+          handleSwipe('left');
+          break;
+        case 'd':
+        case 'arrowright':
+          handleSwipe('right');
+          break;
+        case 'escape':
+          if (showMatchNotification) {
+            setShowMatchNotification(false);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showMatchNotification]);
 
   const loadPotentialBuddies = async () => {
     setIsLoading(true);
@@ -96,6 +130,16 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
       console.error('Error loading potential buddies:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadPendingMatches = async () => {
+    try {
+      const response = await matchesAPI.getPendingMatches();
+      setPendingMatches(response.pendingMatches || []);
+      setPendingMatchesCount(response.pendingMatches?.length || 0);
+    } catch (error) {
+      console.error('Error loading pending matches:', error);
     }
   };
 
@@ -132,7 +176,10 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
           
           if (response.isMatch) {
             // It's a match! Show notification
-            alert(`🎉 It's a match with ${currentBuddy.name}!`);
+            setMatchedUser(currentBuddy);
+            setShowMatchNotification(true);
+            // Auto-hide after 5 seconds
+            setTimeout(() => setShowMatchNotification(false), 5000);
           }
         }
         
@@ -156,13 +203,14 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
     }
   };
 
-  const handleDrag = (event: any, info: PanInfo) => {
-    if (info.offset.x > 100) {
-      handleSwipe('right');
-    } else if (info.offset.x < -100) {
-      handleSwipe('left');
-    }
-  };
+  // Remove drag functionality - no longer needed
+  // const handleDrag = (event: any, info: PanInfo) => {
+  //   if (info.offset.x > 100) {
+  //     handleSwipe('right');
+  //   } else if (info.offset.x < -100) {
+  //     handleSwipe('left');
+  //   }
+  // };
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -181,6 +229,22 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Pending Matches Indicator */}
+          {pendingMatchesCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onNavigate('chat')}
+              className="relative bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Pending Matches
+              <Badge className="ml-2 bg-orange-500 text-white text-xs">
+                {pendingMatchesCount}
+              </Badge>
+            </Button>
+          )}
+          
           <Button
             variant="outline"
             size="sm"
@@ -230,16 +294,75 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
         </motion.div>
       )}
 
+      {/* Match Notification Modal */}
+      {showMatchNotification && matchedUser && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowMatchNotification(false)}
+        >
+          <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Celebration Animation */}
+            <div className="text-6xl mb-4">🎉</div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              It's a Match!
+            </h2>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              You and <span className="font-semibold text-blue-600">{matchedUser.name}</span> are now connected!
+            </p>
+            
+            {/* User Info */}
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Avatar className="w-16 h-16 border-2 border-green-400">
+                <AvatarImage src={matchedUser.avatar} />
+                <AvatarFallback>{matchedUser.name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div className="text-left">
+                <p className="font-medium text-gray-900 dark:text-white">{matchedUser.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{matchedUser.major} • {matchedUser.year}</p>
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col space-y-3">
+              <Button
+                onClick={() => {
+                  setShowMatchNotification(false);
+                  onNavigate('chat');
+                }}
+                className="w-full bg-green-500 hover:bg-green-600 text-white"
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Start Chatting
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setShowMatchNotification(false)}
+                className="w-full"
+              >
+                Continue Browsing
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
       {/* Main Content */}
       <div className="flex-1 p-4">
         <div className="max-w-sm mx-auto h-full flex flex-col justify-center">
           {/* Study Buddy Card */}
           <motion.div
             key={currentBuddy.id}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDrag}
-            whileDrag={{ rotate: 5, scale: 1.05 }}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -357,38 +480,59 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
             </Card>
           </motion.div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-center space-x-6">
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-16 h-16 rounded-full border-2 border-red-200 hover:bg-red-50 hover:border-red-300"
-              onClick={() => handleSwipe('left')}
-            >
-              <X className="w-6 h-6 text-red-500" />
-            </Button>
+          {/* Action Buttons - Updated with clear labels and better UX */}
+          <div className="flex flex-col space-y-4">
+            {/* Main Action Buttons */}
+            <div className="flex justify-center space-x-4">
+              <Button
+                variant="outline"
+                size="lg"
+                className="px-8 py-3 border-2 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
+                onClick={() => handleSwipe('left')}
+              >
+                <UserMinus className="w-5 h-5 mr-2 text-red-500" />
+                Pass
+              </Button>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-12 h-12 rounded-full border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
-              onClick={() => onNavigate('profile')}
-            >
-              <BookOpen className="w-5 h-5 text-blue-500" />
-            </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="px-8 py-3 border-2 border-green-200 hover:bg-green-50 hover:border-green-300 transition-all duration-200"
+                onClick={() => handleSwipe('right')}
+              >
+                <UserPlus className="w-5 h-5 mr-2 text-green-500" />
+                Connect
+              </Button>
+            </div>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-16 h-16 rounded-full border-2 border-green-200 hover:bg-green-50 hover:border-green-300"
-              onClick={() => handleSwipe('right')}
-            >
-              <Heart className="w-6 h-6 text-green-500" />
-            </Button>
+            {/* Secondary Action Buttons */}
+            <div className="flex justify-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-4 py-2 text-blue-600 hover:bg-blue-50"
+                onClick={() => onNavigate('profile')}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                View Profile
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-4 py-2 text-purple-600 hover:bg-purple-50"
+                onClick={() => onNavigate('chat')}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                My Chats
+              </Button>
+            </div>
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-4">
-            Swipe right to connect • Swipe left to pass
+            Click "Connect" to start chatting • Click "Pass" to skip
+            <br />
+            <span className="text-xs">Keyboard shortcuts: A (Pass) • D (Connect) • ESC (Close)</span>
           </p>
         </div>
       </div>

@@ -17,129 +17,18 @@ const validateRequest = (req, res, next) => {
   next();
 };
 
-// Get potential study buddies for the current user
-router.get('/potential-buddies', verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const { 
-      major, 
-      year, 
-      subject, 
-      location, 
-      limit = 10,
-      offset = 0 
-    } = req.query;
-
-    // Get current user's preferences and subjects
-    const currentUser = await database.get(`
-      SELECT major, year, location, latitude, longitude
-      FROM users WHERE id = ?
-    `, [userId]);
-
-    if (!currentUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Build query to find potential buddies
-    let whereConditions = [
-      'u.id != ?',
-      'u.id NOT IN (SELECT user2_id FROM matches WHERE user1_id = ?)',
-      'u.id NOT IN (SELECT user1_id FROM matches WHERE user2_id = ?)'
-    ];
-    let params = [userId, userId, userId];
-
-    // Add filters
-    if (major && major !== 'any') {
-      whereConditions.push('u.major = ?');
-      params.push(major);
-    }
-
-    if (year && year !== 'any') {
-      whereConditions.push('u.year = ?');
-      params.push(year);
-    }
-
-    if (subject && subject !== 'any') {
-      whereConditions.push('us.subject = ?');
-    }
-
-    if (location && location !== 'any') {
-      whereConditions.push('u.location LIKE ?');
-      params.push(`%${location}%`);
-    }
-
-    // Build the main query
-    let query = `
-      SELECT DISTINCT 
-        u.id, u.name, u.university, u.major, u.year, u.bio, u.avatar, u.location,
-        u.latitude, u.longitude, u.created_at,
-        GROUP_CONCAT(DISTINCT us.subject) as subjects,
-        GROUP_CONCAT(DISTINCT CONCAT(ust.day_of_week, ':', ust.start_time, '-', ust.end_time)) as study_times
-      FROM users u
-      LEFT JOIN user_subjects us ON u.id = us.user_id
-      LEFT JOIN user_study_times ust ON u.id = ust.user_id
-    `;
-
-    if (whereConditions.length > 0) {
-      query += ` WHERE ${whereConditions.join(' AND ')}`;
-    }
-
-    query += `
-      GROUP BY u.id
-      ORDER BY 
-        CASE 
-          WHEN u.major = ? THEN 1
-          WHEN u.year = ? THEN 2
-          ELSE 3
-        END,
-        u.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
-
-    params.push(currentUser.major || '', currentUser.year || '', parseInt(limit), parseInt(offset));
-
-    const potentialBuddies = await database.all(query, params);
-
-    // Format the results
-    const formattedBuddies = potentialBuddies.map(buddy => {
-      const subjects = buddy.subjects ? buddy.subjects.split(',') : [];
-      const studyTimes = buddy.study_times ? buddy.study_times.split(',').map(time => {
-        const [day, timeRange] = time.split(':');
-        return { day, time: timeRange };
-      }) : [];
-
-      // Calculate distance if coordinates are available
-      let distance = null;
-      if (currentUser.latitude && currentUser.longitude && buddy.latitude && buddy.longitude) {
-        distance = calculateDistance(
-          currentUser.latitude, currentUser.longitude,
-          buddy.latitude, buddy.longitude
-        );
-      }
-
-      return {
-        ...buddy,
-        subjects,
-        studyTimes,
-        distance: distance ? `${distance.toFixed(1)} miles away` : null
-      };
-    });
-
-    res.json({
-      potentialBuddies: formattedBuddies,
-      pagination: {
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        total: formattedBuddies.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Get potential buddies error:', error);
-    res.status(500).json({ 
-      error: 'Internal server error while fetching potential buddies' 
-    });
-  }
+// Test endpoint to debug request body
+router.post('/swipe-test', verifyToken, (req, res) => {
+  console.log('🧪 Test endpoint called');
+  console.log('📝 Raw request body:', req.body);
+  console.log('📝 Request headers:', req.headers);
+  console.log('🔑 Current user ID:', req.user?.userId);
+  
+  res.json({
+    message: 'Test endpoint reached',
+    body: req.body,
+    userId: req.user?.userId
+  });
 });
 
 // Handle swipe (like/dislike)
@@ -149,6 +38,11 @@ router.post('/swipe', verifyToken, [
   validateRequest
 ], async (req, res) => {
   try {
+    console.log('🎯 Swipe endpoint called');
+    console.log('📝 Request body:', req.body);
+    console.log('🔑 Current user ID:', req.user.userId);
+    console.log('📋 Validation errors:', validationResult(req).array());
+    
     const { targetUserId, action } = req.body;
     const currentUserId = req.user.userId;
 
