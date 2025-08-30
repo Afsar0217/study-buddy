@@ -311,125 +311,54 @@ export function UserProfile({ onBack, userId, onNavigate }: UserProfileProps) {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
           onClick={() => setShowConnectionPopup(false)}
         >
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-3xl p-10 max-w-md w-full text-center shadow-2xl border-4 border-green-400 relative overflow-hidden"
+            className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-green-500 relative"
             onClick={(e) => e.stopPropagation()}
+            style={{ backgroundColor: 'white' }}
           >
-            {/* Enhanced background with better gradients */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-green-100 via-blue-100 to-purple-100 dark:from-green-900/30 dark:via-blue-900/30 dark:to-purple-900/30"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1 }}
-            />
-            
-            {/* Content with relative positioning */}
+            {/* Content */}
             <div className="relative z-10">
-              {/* Enhanced Confetti Animation */}
-              <div className="relative mb-8">
-                <div className="text-8xl mb-6 drop-shadow-lg">🎉</div>
-              
-                {/* Animated confetti pieces with better visibility */}
-                {[...Array(40)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-3 h-3 rounded-full shadow-lg"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#FFB347', '#FF69B4', '#00CED1', '#FFD700', '#FF1493'][Math.floor(Math.random() * 12)]
-                    }}
-                    initial={{ 
-                      y: -20, 
-                      opacity: 0,
-                      scale: 0,
-                      x: Math.random() * 200 - 100
-                    }}
-                    animate={{ 
-                      y: [0, -50, -30, 0],
-                      opacity: [0, 1, 1, 0],
-                      scale: [0, 1.2, 1, 0],
-                      rotate: [0, 180, 360, 720],
-                      x: [0, Math.random() * 100 - 50, Math.random() * 100 - 50, 0]
-                    }}
-                    transition={{
-                      duration: 4,
-                      repeat: Infinity,
-                      delay: i * 0.03,
-                      ease: "easeInOut"
-                    }}
-                  />
-                ))}
-                
-                {/* Enhanced sparkle effects */}
-                {[...Array(20)].map((_, i) => (
-                  <motion.div
-                    key={`sparkle-${i}`}
-                    className="absolute w-2 h-2 bg-yellow-400 rounded-full shadow-lg"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    initial={{ 
-                      opacity: 0,
-                      scale: 0
-                    }}
-                    animate={{ 
-                      opacity: [0, 1, 0],
-                      scale: [0, 2, 0]
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      delay: i * 0.08,
-                      ease: "easeInOut"
-                    }}
-                  />
-                ))}
+              {/* Celebration Icon */}
+              <div className="mb-4">
+                <div className="text-5xl mb-3">🎉</div>
               </div>
               
-              {/* Enhanced title with better styling */}
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4 drop-shadow-sm">
-                🎯 Successfully Connected!
+              {/* Title */}
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
+                Successfully Connected!
               </h2>
               
-              {/* Enhanced description */}
-              <p className="text-lg text-gray-700 dark:text-gray-200 mb-8 leading-relaxed">
-                You are now connected with <span className="font-bold text-green-600 dark:text-green-400">{profile?.name}</span>! 
-                <br />
+              {/* Description */}
+              <p className="text-sm text-gray-700 mb-5 leading-relaxed">
+                You are now connected with <span className="font-bold text-green-600">{profile?.name}</span>! 
                 You can now start chatting and collaborating on study sessions.
               </p>
               
-              {/* Enhanced Action Buttons */}
-              <div className="flex flex-col space-y-4">
+              {/* Action Buttons */}
+              <div className="flex flex-col space-y-3">
                 <Button
                   onClick={() => {
                     setShowConnectionPopup(false);
-                    handleMessage(); // Navigate to chat
+                    handleMessage();
                   }}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-6 text-lg shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 text-sm"
                 >
-                  <MessageSquare className="w-5 h-5 mr-3" />
+                  <MessageSquare className="w-4 h-4 mr-2" />
                   Start Chatting Now
                 </Button>
                 
                 <Button
                   variant="outline"
                   onClick={() => setShowConnectionPopup(false)}
-                  className="border-2 border-gray-300 hover:border-gray-400 text-gray-700 dark:text-gray-300 font-medium py-3 px-6 text-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                  className="border-gray-300 hover:border-gray-400 text-gray-700 font-medium py-2 px-4 text-sm"
                 >
                   Continue Browsing
                 </Button>
-              </div>
-              
-              {/* Close button indicator */}
-              <div className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-                Click outside or press any button to close
               </div>
             </div>
           </motion.div>

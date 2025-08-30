@@ -7,6 +7,7 @@ import { Card, CardContent } from './ui/card';
 import { ArrowLeft, Send, Paperclip, Smile, MessageSquare, Clock, Users, BookOpen, Lightbulb } from 'lucide-react';
 import { chatAPI, matchesAPI } from '../services/api';
 import { io, Socket } from 'socket.io-client';
+import { staticChats, getChatById, getMessagesForChat, type ChatConversation, type ChatMessage } from '../data/staticChats';
 
 interface ChatInterfaceProps {
   onBack: () => void;
@@ -169,6 +170,7 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
   const [pendingMatches, setPendingMatches] = useState<any[]>([]);
   const [loadingPendingMatches, setLoadingPendingMatches] = useState(false);
   const [currentStaticChat, setCurrentStaticChat] = useState<any>(null);
+  const [currentPersonalChat, setCurrentPersonalChat] = useState<ChatConversation | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [otherUser, setOtherUser] = useState<any>(initialOtherUser);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -327,6 +329,7 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
     setConversationId(undefined);
     setOtherUser(undefined);
     setCurrentStaticChat(undefined);
+    setCurrentPersonalChat(null);
     setMessages([]);
     // Reload conversations and pending matches
     loadConversations();
@@ -339,6 +342,19 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
     setMessages(staticChat.messages);
     setConversationId(undefined);
     setOtherUser(undefined);
+    setCurrentPersonalChat(null);
+    // Clear the conversation list view
+    setConversations([]);
+    setPendingMatches([]);
+  };
+
+  const openPersonalChat = (personalChat: ChatConversation) => {
+    console.log('🎯 Opening personal chat:', personalChat.participantName);
+    setCurrentPersonalChat(personalChat);
+    setMessages(personalChat.messages);
+    setConversationId(undefined);
+    setOtherUser(undefined);
+    setCurrentStaticChat(null);
     // Clear the conversation list view
     setConversations([]);
     setPendingMatches([]);
@@ -379,11 +395,58 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
     }
   };
 
+  const sendMessageToPersonalChat = () => {
+    if (newMessage.trim() && currentPersonalChat) {
+      const newMsg = {
+        id: Date.now().toString(),
+        content: newMessage,
+        sender_id: currentUser?.id || 'current-user',
+        sender_name: currentUser?.name || 'You',
+        sender_avatar: currentUser?.avatar || '',
+        message_type: 'text',
+        created_at: new Date().toISOString(),
+        read_at: null,
+        isMe: true
+      };
+      
+      setMessages(prev => [...prev, newMsg]);
+      setNewMessage('');
+      
+      // Simulate response from the other person after a short delay
+      setTimeout(() => {
+        const responses = [
+          "That's a great point! I've been thinking about that too.",
+          "Thanks for sharing! This is really helpful.",
+          "I agree completely. What do you think about...",
+          "Interesting perspective! Have you tried...",
+          "That makes a lot of sense. Maybe we could..."
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        const otherPersonResponse = {
+          id: (Date.now() + 1).toString(),
+          content: randomResponse,
+          sender_id: currentPersonalChat.participantId,
+          sender_name: currentPersonalChat.participantName,
+          sender_avatar: currentPersonalChat.participantAvatar || '👤',
+          message_type: 'text',
+          created_at: new Date().toISOString(),
+          read_at: null,
+          isMe: false
+        };
+        setMessages(prev => [...prev, otherPersonResponse]);
+      }, 1500);
+    }
+  };
+
   const sendMessage = () => {
     if (newMessage.trim()) {
       if (currentStaticChat) {
         // Handle static chat message
         sendMessageToStaticChat();
+      } else if (currentPersonalChat) {
+        // Handle personal chat message
+        sendMessageToPersonalChat();
       } else if (socket && isConnected && conversationId) {
         // Handle regular conversation message
         socket.emit('send_message', {
@@ -405,7 +468,7 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
   };
 
   // If no conversation is selected, show conversation list
-  if (!conversationId && !currentStaticChat) {
+  if (!conversationId && !currentStaticChat && !currentPersonalChat) {
     return (
       <div className="h-full flex flex-col">
         {/* Header */}
@@ -434,7 +497,7 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
             <div className="text-center py-8 text-muted-foreground">
               Loading...
             </div>
-          ) : conversations.length === 0 && pendingMatches.length === 0 ? (
+          ) : conversations.length === 0 && pendingMatches.length === 0 && staticChats.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
               <p className="text-lg font-medium mb-2">No conversations yet</p>
@@ -451,6 +514,61 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Personal Chats Section */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2 flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
+                  Your Chats ({staticChats.length})
+                </h3>
+                <div className="space-y-2">
+                  {staticChats.map((personalChat) => (
+                    <motion.div
+                      key={personalChat.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      whileHover={{ scale: 1.02 }}
+                      className="cursor-pointer"
+                      onClick={() => openPersonalChat(personalChat)}
+                    >
+                      <Card className="hover:shadow-md transition-shadow border-2 border-green-100 bg-green-50/50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="w-12 h-12 border-2 border-green-200">
+                              <AvatarFallback className="text-lg">
+                                {personalChat.participantAvatar || '👤'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-medium truncate text-green-800">{personalChat.participantName}</h3>
+                                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                  {personalChat.unreadCount > 0 ? `${personalChat.unreadCount} new` : 'Active'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-green-600 truncate mt-1">
+                                {personalChat.lastMessage}
+                              </p>
+                              <div className="flex items-center space-x-2 mt-2">
+                                <span className="text-xs text-green-500">
+                                  {personalChat.lastMessageTime}
+                                </span>
+                                <span className="text-xs text-green-400">
+                                  {personalChat.messages.length} messages
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-center space-y-1">
+                              <MessageSquare className="w-5 h-5 text-green-500" />
+                              <span className="text-xs text-green-500">Chat</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
               {/* Static Chats Section */}
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-3 px-2 flex items-center">
@@ -633,19 +751,23 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
         
         <div className="flex items-center space-x-3">
           <Avatar className="w-8 h-8">
-            <AvatarImage src={currentStaticChat ? currentStaticChat.avatar : otherUser?.avatar} />
+            <AvatarImage src={currentStaticChat ? currentStaticChat.avatar : currentPersonalChat ? undefined : otherUser?.avatar} />
             <AvatarFallback>
-              {currentStaticChat ? currentStaticChat.name?.charAt(0) : otherUser?.name?.charAt(0) || 'U'}
+              {currentStaticChat ? currentStaticChat.name?.charAt(0) : currentPersonalChat ? currentPersonalChat.participantAvatar : otherUser?.name?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-medium">
-              {currentStaticChat ? currentStaticChat.name : otherUser?.name || 'Study Buddy'}
+              {currentStaticChat ? currentStaticChat.name : currentPersonalChat ? currentPersonalChat.participantName : otherUser?.name || 'Study Buddy'}
             </h3>
             <div className="flex items-center space-x-2">
               {currentStaticChat ? (
                 <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
                   Community Chat
+                </span>
+              ) : currentPersonalChat ? (
+                <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  Personal Chat
                 </span>
               ) : (
                 <>
@@ -725,13 +847,13 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={currentStaticChat ? "Share your thoughts with the community..." : "Type a message..."}
-            disabled={currentStaticChat ? false : !isConnected}
+            placeholder={currentStaticChat ? "Share your thoughts with the community..." : currentPersonalChat ? "Type a message..." : "Type a message..."}
+            disabled={currentStaticChat ? false : currentPersonalChat ? false : !isConnected}
             className="flex-1"
           />
           <Button 
             onClick={sendMessage} 
-            disabled={!newMessage.trim() || (currentStaticChat ? false : !isConnected)}
+            disabled={!newMessage.trim() || (currentStaticChat ? false : currentPersonalChat ? false : !isConnected)}
             size="sm"
           >
             <Send className="w-4 h-4" />
@@ -740,6 +862,10 @@ export function ChatInterface({ onBack, conversationId: initialConversationId, o
         {currentStaticChat ? (
           <p className="text-xs text-blue-600 mt-2 text-center">
             💬 This is a community chat. Your messages will be visible to everyone.
+          </p>
+        ) : currentPersonalChat ? (
+          <p className="text-xs text-green-600 mt-2 text-center">
+            💬 This is a personal chat with {currentPersonalChat.participantName}.
           </p>
         ) : !isConnected && (
           <p className="text-xs text-red-500 mt-2 text-center">
