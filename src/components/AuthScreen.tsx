@@ -9,7 +9,7 @@ import { Eye, EyeOff, Mail, Lock, User, GraduationCap } from 'lucide-react';
 import { authAPI, LoginCredentials, RegisterData } from '../services/api';
 
 interface AuthScreenProps {
-  onAuth: (userData: any) => void;
+  onAuth: (userData: any, isNewUser: boolean) => void;
 }
 
 export function AuthScreen({ onAuth }: AuthScreenProps) {
@@ -28,6 +28,19 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
     setIsLoading(true);
     setError('');
     
+    // Client-side validation
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all required fields.');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!isLogin && (!formData.name || !formData.university)) {
+      setError('Please fill in all required fields for registration.');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       if (isLogin) {
         const credentials: LoginCredentials = {
@@ -38,7 +51,7 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
         const response = await authAPI.login(credentials);
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
-        onAuth(response.user);
+        onAuth(response.user, false);
       } else {
         const registerData: RegisterData = {
           email: formData.email,
@@ -50,10 +63,20 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
         const response = await authAPI.register(registerData);
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
-        onAuth(response.user);
+        onAuth(response.user, true);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Authentication failed. Please try again.');
+      let errorMessage = 'Authentication failed. Please try again.';
+      
+      if (err.response?.status === 409) {
+        errorMessage = 'An account with this email already exists. Please try logging in instead.';
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -133,7 +156,14 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                 </div>
 
                 {error && (
-                  <div className="text-red-500 text-sm text-center">{error}</div>
+                  <div className="space-y-2">
+                    <div className="text-red-500 text-sm text-center">{error}</div>
+                    {error.includes('already exists') && (
+                      <div className="text-blue-600 text-sm text-center">
+                        💡 Try switching to the "Log In" tab instead
+                      </div>
+                    )}
+                  </div>
                 )}
                 
                 <Button
@@ -212,6 +242,17 @@ export function AuthScreen({ onAuth }: AuthScreenProps) {
                     </button>
                   </div>
                 </div>
+
+                {error && (
+                  <div className="space-y-2">
+                    <div className="text-red-500 text-sm text-center">{error}</div>
+                    {error.includes('already exists') && (
+                      <div className="text-blue-600 text-sm text-center">
+                        💡 Try switching to the "Log In" tab instead
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <Button
                   onClick={() => handleSubmit(false)}

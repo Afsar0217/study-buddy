@@ -9,6 +9,7 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Progress } from './ui/progress';
 import { Plus, X, Camera, BookOpen, Clock, Target } from 'lucide-react';
+import { authAPI } from '../services/api';
 
 interface ProfileSetupProps {
   onComplete: () => void;
@@ -27,6 +28,7 @@ const studyTimes = [
 
 export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [profileData, setProfileData] = useState({
     avatar: '',
     bio: '',
@@ -62,13 +64,44 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      onComplete();
+      handleProfileComplete();
     }
   };
 
   const prevStep = () => {
     if (step > 1) {
       setStep(step - 1);
+    }
+  };
+
+  const handleProfileComplete = async () => {
+    setIsSubmitting(true);
+    try {
+      // Save profile data to backend
+      const updateData = {
+        major: profileData.major,
+        year: profileData.year,
+        bio: profileData.bio,
+        avatar: profileData.avatar
+      };
+
+      console.log('Saving profile data:', updateData);
+      const response = await authAPI.updateProfile(updateData);
+      console.log('Profile update response:', response);
+      
+      // Update localStorage with the updated user data
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = { ...currentUser, ...response.user };
+      console.log('Updated user data for localStorage:', updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Call onComplete to proceed to dashboard
+      onComplete();
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -306,8 +339,9 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
           <Button
             onClick={nextStep}
             className="bg-blue-500 hover:bg-blue-600 text-white"
+            disabled={isSubmitting}
           >
-            {step === totalSteps ? 'Complete Profile' : 'Next'}
+            {isSubmitting ? 'Saving...' : (step === totalSteps ? 'Complete Profile' : 'Next')}
           </Button>
         </div>
       </div>

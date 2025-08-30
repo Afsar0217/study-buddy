@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 interface MainDashboardProps {
-  onNavigate: (screen: string) => void;
+  onNavigate: (screen: 'dashboard' | 'chat' | 'profile' | 'schedule' | 'settings') => void;
   onSignOut: () => void;
   user: any;
 }

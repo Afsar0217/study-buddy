@@ -62,9 +62,9 @@ router.post('/register', [
       { expiresIn: '7d' }
     );
 
-    // Get created user (without password)
+    // Get created user (without password) - include all profile fields
     const user = await database.get(
-      'SELECT id, email, name, university, created_at FROM users WHERE id = ?',
+      'SELECT id, email, name, university, major, year, bio, avatar, location, created_at, updated_at FROM users WHERE id = ?',
       [userId]
     );
 
