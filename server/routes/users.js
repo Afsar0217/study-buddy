@@ -93,6 +93,9 @@ router.get('/me/profile', verifyToken, async (req, res) => {
       WHERE user_id = ?
     `, [userId]);
 
+    console.log('User ID:', userId);
+    console.log('Subjects found:', subjects);
+
     // Get user study times
     const studyTimes = await database.all(`
       SELECT id, day_of_week, start_time, end_time
@@ -109,6 +112,8 @@ router.get('/me/profile', verifyToken, async (req, res) => {
           WHEN 'Sunday' THEN 7 
         END
     `, [userId]);
+
+    console.log('Study times found:', studyTimes);
 
     // Get user preferences
     const preferences = await database.all(`
@@ -133,6 +138,84 @@ router.get('/me/profile', verifyToken, async (req, res) => {
     console.error('Get profile error:', error);
     res.status(500).json({ 
       error: 'Internal server error while fetching profile' 
+    });
+  }
+});
+
+// Update current user's basic information
+router.put('/me', verifyToken, [
+  body('name').optional().trim().isLength({ min: 1, max: 100 }),
+  body('university').optional().trim().isLength({ min: 1, max: 200 }),
+  body('major').optional().trim().isLength({ min: 1, max: 100 }),
+  body('year').optional().isIn(['Freshman', 'Sophomore', 'Junior', 'Senior', 'Graduate']),
+  body('bio').optional().trim().isLength({ max: 500 }),
+  body('location').optional().trim().isLength({ min: 1, max: 200 }),
+  validateRequest
+], async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { name, university, major, year, bio, location } = req.body;
+
+    // Build update query dynamically
+    const updateFields = [];
+    const updateValues = [];
+
+    if (name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (university !== undefined) {
+      updateFields.push('university = ?');
+      updateValues.push(university);
+    }
+    if (major !== undefined) {
+      updateFields.push('major = ?');
+      updateValues.push(major);
+    }
+    if (year !== undefined) {
+      updateFields.push('year = ?');
+      updateValues.push(year);
+    }
+    if (bio !== undefined) {
+      updateFields.push('bio = ?');
+      updateValues.push(bio);
+    }
+    if (location !== undefined) {
+      updateFields.push('location = ?');
+      updateValues.push(location);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    updateFields.push('updated_at = CURRENT_TIMESTAMP');
+    updateValues.push(userId);
+
+    const updateQuery = `
+      UPDATE users 
+      SET ${updateFields.join(', ')}
+      WHERE id = ?
+    `;
+
+    await database.run(updateQuery, updateValues);
+
+    // Get updated user data
+    const updatedUser = await database.get(`
+      SELECT id, email, name, university, major, year, bio, avatar, location, 
+             created_at, updated_at
+      FROM users WHERE id = ?
+    `, [userId]);
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error while updating profile' 
     });
   }
 });

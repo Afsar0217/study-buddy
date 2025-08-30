@@ -7,6 +7,7 @@ import { ProfileSetup } from './components/ProfileSetup';
 import { MainDashboard } from './components/MainDashboard';
 import { ChatInterface } from './components/ChatInterface';
 import { ProfileView } from './components/ProfileView';
+import { MyProfile } from './components/MyProfile';
 import { ScheduleSystem } from './components/ScheduleSystem';
 import { StudySessionCreation } from './components/StudySessionCreation';
 import { SettingsScreen } from './components/SettingsScreen';
@@ -21,6 +22,7 @@ type Screen =
   | 'dashboard'
   | 'chat'
   | 'profile'
+  | 'my-profile'
   | 'schedule'
   | 'settings';
 
@@ -126,6 +128,8 @@ export default function App() {
           return <ChatInterface onBack={() => navigateTo('dashboard')} currentUser={user} />;
       case 'profile':
         return <ProfileView onBack={() => navigateTo('dashboard')} />;
+      case 'my-profile':
+        return <MyProfile onBack={() => navigateTo('dashboard')} user={user} />;
               case 'schedule':
           return <StudySessionCreation onBack={() => navigateTo('dashboard')} user={user} />;
       case 'settings':

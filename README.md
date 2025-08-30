@@ -6,6 +6,7 @@ A comprehensive platform for students to find study partners, schedule study ses
 
 ### Core Functionality
 - **User Authentication & Profiles**: Secure login/signup with JWT tokens
+- **My Profile Management**: Comprehensive profile editing with subjects, study times, and preferences
 - **Study Buddy Matching**: Swipe-based matching system with intelligent algorithms
 - **Real-time Chat**: Instant messaging with Socket.IO
 - **Study Session Management**: Create, join, and manage study sessions

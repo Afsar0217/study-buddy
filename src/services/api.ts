@@ -273,8 +273,12 @@ export const matchesAPI = {
       if (value !== undefined) params.append(key, value.toString());
     });
     
-    const response = await api.get(`/matches/potential-buddies?${params.toString()}`);
-    return response.data;
+    const response = await api.get(`/users/search?${params.toString()}`);
+    // Transform the response to match the expected structure
+    return {
+      potentialBuddies: response.data.users || [],
+      pagination: response.data.pagination || {}
+    };
   },
 
   swipe: async (targetUserId: string, action: 'like' | 'dislike'): Promise<{ isMatch: boolean; match?: any }> => {
@@ -371,8 +375,13 @@ export const scheduleAPI = {
       const response = await api.post('/schedule/sessions', sessionData);
       console.log('API createSession response:', response.data);
       return response.data;
-    } catch (error) {
-      console.error('API createSession error:', error.response?.data || error.message);
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        // @ts-ignore
+        console.error('API createSession error:', error.response?.data || (error as any).message);
+      } else {
+        console.error('API createSession error:', (error as any)?.message || error);
+      }
       throw error;
     }
   },

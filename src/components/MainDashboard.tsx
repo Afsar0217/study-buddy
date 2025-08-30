@@ -8,12 +8,12 @@ import { useTheme } from './ThemeProvider';
 import { 
   Heart, X, MessageSquare, Calendar, Settings, Sun, Moon, 
   MapPin, Clock, BookOpen, Star, Filter, Zap, LogOut, RefreshCw,
-  UserPlus, UserMinus, MessageCircle
+  UserPlus, UserMinus, MessageCircle, User
 } from 'lucide-react';
 import { matchesAPI } from '../services/api';
 
 interface MainDashboardProps {
-  onNavigate: (screen: 'dashboard' | 'chat' | 'profile' | 'schedule' | 'settings') => void;
+  onNavigate: (screen: 'dashboard' | 'chat' | 'profile' | 'my-profile' | 'schedule' | 'settings') => void;
   onSignOut: () => void;
   user: any;
 }
@@ -520,6 +520,16 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
               <Button
                 variant="ghost"
                 size="sm"
+                className="px-4 py-2 text-green-600 hover:bg-green-50"
+                onClick={() => onNavigate('my-profile')}
+              >
+                <User className="w-4 h-4 mr-2" />
+                My Profile
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
                 className="px-4 py-2 text-purple-600 hover:bg-purple-50"
                 onClick={() => onNavigate('chat')}
               >
@@ -557,6 +567,16 @@ export function MainDashboard({ onNavigate, onSignOut, user }: MainDashboardProp
         >
           <MessageSquare className="w-5 h-5 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">Chats</span>
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          className="flex flex-col items-center space-y-1"
+          onClick={() => onNavigate('my-profile')}
+        >
+          <User className="w-5 h-5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">Profile</span>
         </Button>
         
         <Button
