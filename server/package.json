@@ -7,6 +7,7 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "db:init": "node database/postgres-init.js",
+    "db:check": "node check-db.js",
     "db:repair": "node repair-db.js",
     "db:init:sqlite": "node database/init.js"
   },

@@ -6,12 +6,13 @@ services:
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
+    preDeployCommand: npm run db:check
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3001
       - key: FRONTEND_URL
-        value: https://placeholder.vercel.app
+        value: https://study-buddy-delta-silk.vercel.app
       - key: JWT_SECRET
         generateValue: true
