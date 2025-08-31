@@ -34,23 +34,32 @@ class Database {
             }
           });
         } else {
-          // Fallback to SQLite for local development
-          console.log('📝 Using SQLite for local development');
-          const sqlite3 = require('sqlite3').verbose();
-          const path = require('path');
-          
-          this.dbPath = path.join(__dirname, 'study_buddy.db');
-          this.db = new sqlite3.Database(this.dbPath, (err) => {
-            if (err) {
-              console.error('❌ Error connecting to SQLite:', err);
-              reject(err);
-            } else {
-              console.log('✅ Connected to SQLite database');
-              this.db.run('PRAGMA foreign_keys = ON');
-              this.isConnected = true;
-              resolve();
+          // Fallback to SQLite for local development only
+          if (process.env.NODE_ENV === 'development') {
+            try {
+              console.log('📝 Using SQLite for local development');
+              const sqlite3 = require('sqlite3').verbose();
+              const path = require('path');
+              
+              this.dbPath = path.join(__dirname, 'study_buddy.db');
+              this.db = new sqlite3.Database(this.dbPath, (err) => {
+                if (err) {
+                  console.error('❌ Error connecting to SQLite:', err);
+                  reject(err);
+                } else {
+                  console.log('✅ Connected to SQLite database');
+                  this.db.run('PRAGMA foreign_keys = ON');
+                  this.isConnected = true;
+                  resolve();
+                }
+              });
+            } catch (sqliteError) {
+              console.error('❌ SQLite not available:', sqliteError.message);
+              reject(new Error('SQLite not available in production environment'));
             }
-          });
+          } else {
+            reject(new Error('DATABASE_URL is required in production environment'));
+          }
         }
       } catch (error) {
         console.error('❌ Database connection error:', error);
