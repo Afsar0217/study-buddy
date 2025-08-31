@@ -105,6 +105,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Database test endpoint
+app.get('/test-db', async (req, res) => {
+  try {
+    // Test database connection
+    const result = await database.get('SELECT COUNT(*) as count FROM users');
+    res.json({ 
+      status: 'Database OK', 
+      userCount: result.count,
+      timestamp: new Date().toISOString() 
+    });
+  } catch (error) {
+    console.error('Database test error:', error);
+    res.status(500).json({ 
+      error: 'Database test failed', 
+      message: error.message,
+      timestamp: new Date().toISOString() 
+    });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes.router);
 app.use('/api/users', userRoutes.router);
