@@ -21,8 +21,8 @@
 ## Step 3: Set Environment Variables
 In your Vercel project settings, add these environment variables:
 ```
-VITE_API_URL=https://your-backend-url.railway.app/api
-VITE_SOCKET_URL=https://your-backend-url.railway.app
+VITE_API_URL=https://study-buddy-backend-ix9h.onrender.com/api
+VITE_SOCKET_URL=https://study-buddy-backend-ix9h.onrender.com
 ```
 
 ## Step 4: Deploy

@@ -38,8 +38,8 @@
   - [ ] Build Command: `npm run build`
   - [ ] Output Directory: `build`
 - [ ] Set environment variables:
-  - [ ] `VITE_API_URL=https://your-backend.railway.app/api`
-  - [ ] `VITE_SOCKET_URL=https://your-backend.railway.app`
+  - [ ] `VITE_API_URL=https://study-buddy-backend-ix9h.onrender.com/api`
+  - [ ] `VITE_SOCKET_URL=https://study-buddy-backend-ix9h.onrender.com`
 - [ ] Deploy and test functionality
 
 ## 🧪 Post-Deployment Testing
