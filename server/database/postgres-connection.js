@@ -6,6 +6,19 @@ class Database {
     this.isConnected = false;
   }
 
+  // Convert SQLite-style parameters (?) to PostgreSQL-style ($1, $2, etc.)
+  convertParams(sql, params = []) {
+    if (!this.pool) {
+      // SQLite - no conversion needed
+      return { sql, params };
+    }
+    
+    // PostgreSQL - convert ? to $1, $2, etc.
+    let paramIndex = 1;
+    const convertedSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+    return { sql: convertedSql, params };
+  }
+
   connect() {
     return new Promise((resolve, reject) => {
       try {
@@ -105,8 +118,10 @@ class Database {
     return new Promise((resolve, reject) => {
       if (this.pool) {
         // PostgreSQL
-        this.pool.query(sql, params, (err, result) => {
+        const { sql: convertedSql, params: convertedParams } = this.convertParams(sql, params);
+        this.pool.query(convertedSql, convertedParams, (err, result) => {
           if (err) {
+            console.error('PostgreSQL run error:', err);
             reject(err);
           } else {
             resolve({
@@ -119,6 +134,7 @@ class Database {
         // SQLite
         this.db.run(sql, params, function(err) {
           if (err) {
+            console.error('SQLite run error:', err);
             reject(err);
           } else {
             resolve({
@@ -138,8 +154,10 @@ class Database {
     return new Promise((resolve, reject) => {
       if (this.pool) {
         // PostgreSQL
-        this.pool.query(sql, params, (err, result) => {
+        const { sql: convertedSql, params: convertedParams } = this.convertParams(sql, params);
+        this.pool.query(convertedSql, convertedParams, (err, result) => {
           if (err) {
+            console.error('PostgreSQL get error:', err);
             reject(err);
           } else {
             resolve(result.rows[0] || null);
@@ -149,6 +167,7 @@ class Database {
         // SQLite
         this.db.get(sql, params, (err, row) => {
           if (err) {
+            console.error('SQLite get error:', err);
             reject(err);
           } else {
             resolve(row);
@@ -165,8 +184,10 @@ class Database {
     return new Promise((resolve, reject) => {
       if (this.pool) {
         // PostgreSQL
-        this.pool.query(sql, params, (err, result) => {
+        const { sql: convertedSql, params: convertedParams } = this.convertParams(sql, params);
+        this.pool.query(convertedSql, convertedParams, (err, result) => {
           if (err) {
+            console.error('PostgreSQL all error:', err);
             reject(err);
           } else {
             resolve(result.rows || []);
@@ -176,6 +197,7 @@ class Database {
         // SQLite
         this.db.all(sql, params, (err, rows) => {
           if (err) {
+            console.error('SQLite all error:', err);
             reject(err);
           } else {
             resolve(rows);
