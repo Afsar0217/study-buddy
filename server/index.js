@@ -153,8 +153,19 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database connection before starting server
 database.connect()
-  .then(() => {
+  .then(async () => {
     console.log('✅ Database connected successfully');
+    
+    // Check if tables exist, if not create them
+    try {
+      await database.get('SELECT COUNT(*) as count FROM users');
+      console.log('✅ Database tables already exist');
+    } catch (error) {
+      console.log('❌ Tables not found, creating them...');
+      const { createTables } = require('./database/postgres-init');
+      await createTables();
+      console.log('✅ Database tables created successfully');
+    }
     
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
