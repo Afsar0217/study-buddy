@@ -67,6 +67,10 @@
             "server": "cd server && npm run dev",
             "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
             "dev:windows": "start cmd /k \"npm run server\" && start cmd /k \"npm run dev\"",
-            "db:init": "cd server && npm run db:init"
+            "db:init": "cd server && npm run db:init",
+            "db:init:postgres": "cd server && npm run db:init",
+            "db:init:sqlite": "cd server && npm run db:init:sqlite",
+            "deploy:prepare": "npm run build && cd server && npm install",
+            "deploy:test": "npm run build && cd server && npm start"
       }
 }

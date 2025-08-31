@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const database = require('../database/connection');
+const database = require('../database/postgres-connection');
 const { verifyToken } = require('./auth');
 
 const router = express.Router();
