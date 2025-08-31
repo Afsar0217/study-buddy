@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const database = require('./database/connection');
+const database = require('./database/postgres-connection');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 

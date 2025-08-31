@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
 
-const database = require('../database/connection');
+const database = require('../database/postgres-connection');
 
 const router = express.Router();
 
