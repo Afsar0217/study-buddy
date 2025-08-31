@@ -20,17 +20,69 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: function (origin, callback) {
+      const allowedOrigins = [
+        process.env.FRONTEND_URL || "http://localhost:5173",
+        "http://localhost:5173",
+        "http://localhost:3000"
+      ];
+      
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        const cleanOrigin = origin.replace(/\/$/, '');
+        const cleanAllowed = allowedOrigin.replace(/\/$/, '');
+        return cleanOrigin === cleanAllowed;
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Security middleware
 app.use(helmet());
-app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  credentials: true
-}));
+
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || "http://localhost:5173",
+      "http://localhost:5173",
+      "http://localhost:3000"
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Remove trailing slashes for comparison
+      const cleanOrigin = origin.replace(/\/$/, '');
+      const cleanAllowed = allowedOrigin.replace(/\/$/, '');
+      return cleanOrigin === cleanAllowed;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
