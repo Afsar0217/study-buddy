@@ -255,19 +255,21 @@ export function ProfileView({ onBack, onNavigate }: ProfileViewProps) {
         <div className="flex space-x-3">
           <Button 
             variant="outline" 
-            className="flex-1"
+            className="!flex-1 !bg-blue-100 !border-2 !border-blue-500 !text-blue-900 hover:!bg-blue-200 hover:!border-blue-600 dark:!bg-blue-800 dark:!border-blue-400 dark:!text-blue-100 dark:hover:!bg-blue-700 !transition-all !duration-200 !shadow-lg !font-bold !text-base !py-3 !min-h-[48px]"
             onClick={handleMessage}
+            style={{ backgroundColor: '#dbeafe !important', borderColor: '#3b82f6 !important', color: '#1e3a8a !important' }}
           >
             <MessageSquare className="w-4 h-4 mr-2" />
-            Message
+            <span className="!font-bold">Message</span>
           </Button>
           <Button 
-            className="flex-1 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white"
+            className="!flex-1 !bg-blue-600 hover:!bg-blue-700 !text-white !border-2 !border-blue-500 !shadow-xl hover:!shadow-2xl !transition-all !duration-200 !font-bold !text-base !py-3 !min-h-[48px]"
             onClick={handleConnect}
             disabled={isConnecting}
+            style={{ backgroundColor: '#2563eb !important', borderColor: '#3b82f6 !important', color: 'white !important' }}
           >
             <Users className="w-4 h-4 mr-2" />
-            {isConnecting ? 'Connecting...' : 'Connect'}
+            <span className="!font-bold !text-white">{isConnecting ? 'Connecting...' : 'Connect'}</span>
           </Button>
         </div>
       </div>
@@ -284,9 +286,7 @@ export function ProfileView({ onBack, onNavigate }: ProfileViewProps) {
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-green-500 relative"
-            onClick={(e) => e.stopPropagation()}
-            style={{ backgroundColor: 'white' }}
+            className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl border-2 border-green-500 relative"
           >
             {/* Content */}
             <div className="relative z-10">
@@ -296,12 +296,12 @@ export function ProfileView({ onBack, onNavigate }: ProfileViewProps) {
               </div>
               
               {/* Title */}
-              <h2 className="text-xl font-bold text-gray-900 mb-3">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                 Successfully Connected!
               </h2>
               
               {/* Description */}
-              <p className="text-sm text-gray-700 mb-5 leading-relaxed">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
                 You are now connected with <span className="font-bold text-green-600">{profileData.name}</span>! 
                 You can now start chatting and collaborating on study sessions.
               </p>
@@ -313,18 +313,19 @@ export function ProfileView({ onBack, onNavigate }: ProfileViewProps) {
                     setShowConnectionPopup(false);
                     handleMessage();
                   }}
-                  className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 text-sm"
+                  className="!bg-blue-600 !hover:bg-blue-700 !text-white !border-2 !border-blue-500 !font-bold !py-3 !px-6 !shadow-xl hover:!shadow-2xl !transition-all !duration-200 !text-base !min-h-[48px] !w-full !rounded-lg"
+                  style={{ backgroundColor: '#2563eb !important', color: 'white !important', border: '2px solid #3b82f6 !important' }}
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
-                  Start Chatting Now
+                  <span className="!font-bold !text-white">Start Chatting Now</span>
                 </Button>
                 
                 <Button
                   variant="outline"
                   onClick={() => setShowConnectionPopup(false)}
-                  className="border-gray-300 hover:border-gray-400 text-gray-700 font-medium py-2 px-4 text-sm"
+                  className="!border-2 !border-gray-600 hover:!border-gray-800 !text-gray-900 dark:!text-gray-100 dark:!border-gray-400 dark:hover:!border-gray-300 !font-bold !py-3 !px-6 !bg-gray-100 hover:!bg-gray-200 dark:!bg-gray-600 dark:hover:!bg-gray-500 !transition-all !duration-200 !shadow-lg !text-base !min-h-[48px] !w-full !rounded-lg"
                 >
-                  Continue Browsing
+                  <span className="!font-bold">Continue Browsing</span>
                 </Button>
               </div>
             </div>

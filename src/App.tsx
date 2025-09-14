@@ -192,7 +192,7 @@ export default function App() {
       case 'profile':
         return <ProfileView onBack={() => navigateTo('dashboard')} onNavigate={(screen: string) => navigateTo(screen as Screen)} />;
       case 'my-profile':
-        return <MyProfile onBack={() => navigateTo('dashboard')} user={user} onSignOut={handleSignOut} />;
+        return <MyProfile onBack={() => navigateTo('dashboard')} user={user} onSignOut={handleSignOut} onNavigate={(screen: string) => navigateTo(screen as Screen)} />;
       case 'user-profile':
         return selectedUserId ? (
           <UserProfile onBack={() => navigateTo('dashboard')} userId={selectedUserId} onNavigate={(screen: string) => navigateTo(screen as Screen)} />

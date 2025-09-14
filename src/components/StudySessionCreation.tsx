@@ -495,7 +495,7 @@ export function StudySessionCreation({ onBack, user }: StudySessionCreationProps
               <select
                 value={sessionTypeFilter}
                 onChange={(e) => setSessionTypeFilter(e.target.value)}
-                className="px-3 py-2 border rounded-md"
+                className="px-3 py-2 border rounded-md bg-white dark:bg-gray-800 text-foreground"
               >
                 <option value="all">All Types</option>
                 <option value="in-person">In-Person</option>

@@ -505,7 +505,13 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
               
               {/* Filter Dropdown */}
               {isFilterDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50" style={{ backgroundColor: 'white' }}>
+                <div 
+                  className="absolute right-0 top-full mt-2 w-64 !bg-white dark:!bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50" 
+                  style={{ 
+                    backgroundColor: theme === 'dark' ? '#1f2937' : 'white',
+                    borderColor: theme === 'dark' ? '#374151' : '#e5e7eb'
+                  }}
+                >
                   <div className="py-2 grid grid-cols-2 gap-1">
                     {filterOptions.map((option) => (
                       <button
@@ -620,10 +626,10 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
         </div>
       </div>
 
-      {/* Search Interface - Full Screen Overlay with Solid White Background */}
+      {/* Search Interface - Full Screen Overlay */}
       {showSearch && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900" style={{ backgroundColor: 'white' }}>
-          <div className="h-full w-full flex flex-col bg-white dark:bg-gray-900" style={{ backgroundColor: 'white' }}>
+        <div className="fixed inset-0 z-50 bg-white dark:bg-gray-900">
+          <div className="h-full w-full flex flex-col bg-white dark:bg-gray-900">
             {/* Search Header with Shadow */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
               <div>
@@ -641,7 +647,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
             </div>
             
             {/* Search Content - Professional Layout */}
-            <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900" style={{ backgroundColor: 'white' }}>
+            <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900">
               {/* Network Status Indicator */}
               {!isOnline && (
                 <div className="mx-8 mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
@@ -657,7 +663,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
               {/* Search Container with Professional Design */}
               <div className="max-w-5xl mx-auto px-4 py-4">
                 {/* Search Input Card */}
-                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-4" style={{ backgroundColor: 'white' }}>
+                <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 mb-4">
                   <div className="p-4">
                     <div className="relative">
                       <input
@@ -682,7 +688,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
                 {/* Search Results or States */}
                 {hasSearched && searchResults.length > 0 ? (
                   // Search Results
-                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'white' }}>
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-base font-semibold text-gray-900 dark:text-white">
@@ -753,7 +759,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
                   </div>
                 ) : hasSearched && searchResults.length === 0 && !isSearching ? (
                   // No Results Found
-                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'white' }}>
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                     <div className="text-center py-12">
                       <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
                         <X className="w-6 h-6 text-gray-400" />
@@ -768,7 +774,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
                   </div>
                 ) : isSearching ? (
                   // Loading State
-                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'white' }}>
+                  <div className="bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
                     <div className="text-center py-12">
                       <RefreshCw className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-4" />
                       <h3 className="text-base font-semibold text-gray-500 dark:text-gray-400 mb-2">
@@ -810,7 +816,7 @@ export function MainDashboard({ onNavigate, onSignOut, user, onViewUserProfile }
                   </div>
                 ) : (
                   // Initial State
-                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700" style={{ backgroundColor: 'white' }}>
+                  <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
                     <div className="text-center py-24">
                       <Search className="w-20 h-20 text-gray-300 dark:text-gray-600 mx-auto mb-8" />
                       <h3 className="text-lg font-semibold text-gray-500 dark:text-gray-400 mb-4">
