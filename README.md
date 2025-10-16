@@ -1,6 +1,4 @@
-Sure! Here's your README content properly formatted in Markdown so you can directly copy and paste it into `README.md`:
 
-```markdown
 # Study Buddy
 
 Study Buddy is an online learning companion: a web app that lets users interact with AI for studying, ask questions, and maintain persistent sessions.
@@ -106,7 +104,3 @@ Contributions are welcome!
 
 ```
 
-This version will render perfectly in GitHub and other Markdown viewers.  
-
-If you want, I can also **add a "Demo / Screenshot" section** to make it more appealing for your portfolio. Do you want me to do that?
-```
